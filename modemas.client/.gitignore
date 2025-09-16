@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Build-related files
+node_modules/
+obj/
+obj\\Debug/
