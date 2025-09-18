@@ -1,6 +1,6 @@
-# [Project name]
+# Kaput
 ## Project overview
-[Project name] is a web application made by team Modemas, using ASP.NET (C# NET 8.0) Core and React (Javascript).
+Kaput is a web application made by team Modemas, using ASP.NET (C# NET 8.0) Core and React (Javascript).
 
 ## Team members
 * Arnas Vyšniauskas [Arvys7](https://github.com/Arvys7)
