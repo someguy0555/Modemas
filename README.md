@@ -1,6 +1,6 @@
-# Kauput
+# [Project name]
 ## Project overview
-Kauput is a web application made by team Modemas, using ASP.NET (C# NET 8.0) Core and React (Javascript).
+[Project name] is a web application made by team Modemas, using ASP.NET (C# NET 8.0) Core and React (Javascript).
 
 ## Team members
 * Arnas Vyšniauskas [Arvys7](https://github.com/Arvys7)
@@ -53,4 +53,3 @@ The project consists of two parts:
     dotnet run
     ```
     This command starts both the backend and the frontend.
-
