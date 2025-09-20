@@ -47,8 +47,10 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '^/weatherforecast': {
+            // We need to add this, otherwise we won't be able to connect, it'll throw a CORS error.
+            '^/lobbyhub': {
                 target,
+                ws: true, // This enables WebSocket support, which SignalR uses underhood.
                 secure: false
             }
         },
