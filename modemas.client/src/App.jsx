@@ -6,8 +6,12 @@ function App() {
     const [connection, setConnection] = useState(null);
     const [players, setPlayers] = useState([]);
     const [lobbyId, setLobbyId] = useState(null);
+    const [playerName, setPlayerName] = useState(null);
 
-    // Run once on component load
+    // UI elements
+    const [inputPlayerName, setInputPlayerName] = useState("");
+    const [inputLobbyId, setInputLobbyId] = useState("");
+
     useEffect(() => {
         const connect = async () => {
             const connection = new signalR.HubConnectionBuilder()
@@ -15,18 +19,25 @@ function App() {
                 .withAutomaticReconnect()
                 .build();
 
-            // Listen for server events
-            connection.on("LobbyCreated", (id) => {
-                console.log("Lobby created with ID:", id);
-                setLobbyId(id);
+            connection.on("LobbyCreated", (lobbyId) => {
+                console.log("Lobby created with ID:", lobbyId);
+                setLobbyId(lobbyId);
             });
 
-            connection.on("PlayerJoined", (playerName) => {
+            connection.on("PlayerJoined", (playerName, lobbyId) => {
                 console.log("Player joined:", playerName);
-                setPlayers((prev) => [...prev, playerName]);
+                setPlayerName(playerName); // Not sure about this
+                setLobbyId(lobbyId); // Or this
+                setPlayers((prev) => {
+                    if (prev.includes(playerName)) return prev;
+                    return [...prev, playerName];
+                });
             });
 
-            // Start connection
+            connection.on("Error", (errorMsg) => {
+                console.log(errorMsg);
+            });
+
             try {
                 await connection.start();
                 console.log("Connected to SignalR hub");
@@ -39,17 +50,15 @@ function App() {
         connect();
     }, []);
 
-    // Example: host creates lobby
     const createLobby = async () => {
         if (connection) {
             await connection.invoke("CreateLobby");
         }
     };
 
-    // Example: player joins lobby
-    const joinLobby = async (name) => {
+    const joinLobby = async (lobbyId, playerName) => {
         if (connection && lobbyId) {
-            await connection.invoke("JoinLobby", lobbyId, name);
+            await connection.invoke("JoinLobby", lobbyId, playerName);
         }
     };
 
@@ -58,14 +67,30 @@ function App() {
             <h1>Lobby Demo</h1>
 
             {!lobbyId && (
-                <button onClick={createLobby}>Create Lobby</button>
+                <>
+                    <button onClick={createLobby}>Create Lobby</button>
+                    <input
+                        type="text"
+                        placeholder="Enter your name"
+                        value={inputPlayerName}
+                        onChange={(e) => setInputPlayerName(e.target.value)}
+                    />
+                    <input
+                        type="text"
+                        placeholder="Enter Lobby ID"
+                        value={inputLobbyId}
+                        onChange={(e) => setInputLobbyId(e.target.value)}
+                    />
+                    <button onClick={() => joinLobby(inputLobbyId, inputPlayerName)}>Join Lobby</button>
+                </>
             )}
 
             {lobbyId && (
                 <>
                     <p>Lobby ID: {lobbyId}</p>
-                    <button onClick={() => joinLobby("Alice")}>Join as Alice</button>
-                    <button onClick={() => joinLobby("Bob")}>Join as Bob</button>
+                    {!playerName && (
+                        <p>Player name: {playerName}</p>
+                    )}
                     <h2>Players:</h2>
                     <ul>
                         {players.map((p, i) => (
