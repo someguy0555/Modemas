@@ -24,7 +24,7 @@ namespace Modemas.Server
             // Console.WriteLine($"Created lobby {lobbyId}");
 
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
-            await Clients.Caller.SendAsync("LobbyCreated", lobbyId);
+            await Clients.Caller.SendAsync("LobbyCreated", lobbyId, LobbyState.Waiting);
         }
 
         /// <summary>
@@ -59,8 +59,6 @@ namespace Modemas.Server
                 return;
             }
 
-            // Console.WriteLine($"Joined lobby {lobbyId}, as {playerName}");
-
             var player = new Player
             {
                 Name = playerName,
@@ -70,7 +68,32 @@ namespace Modemas.Server
             lobby.Players.Add(player);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
-            await Clients.Group(lobbyId).SendAsync("PlayerJoined", playerName, lobbyId);
+            await Clients.Group(lobbyId).SendAsync("LobbyAddPlayer", playerName);
+            await Clients.Caller.SendAsync("LobbyJoined", lobbyId, playerName, lobby.Players.Select(p => p.Name), lobby.State);
+        }
+
+        /// <summary>
+        /// Starts a the match in a lobby. Currently doesn't have much use other then setting lobbyState to LobbyState.Started.
+        /// </summary>
+        /// <param name="lobbyId">The ID of the lobby to join.</param>
+        /// <returns>A task representing the async operation.</returns>
+        public async Task StartMatch(String lobbyId)
+        {
+            if (!Lobbies.TryGetValue(lobbyId, out var lobby))
+            {
+                await Clients.Caller.SendAsync("Error", "Lobby not found");
+                return;
+            }
+
+            if (lobby.HostConnectionId == Context.ConnectionId)
+            {
+                lobby.State = LobbyState.Started;
+                await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State);
+            }
+            else
+            {
+                await Clients.Caller.SendAsync("Error", "Only the host can start the match");
+            }
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)

@@ -3,10 +3,12 @@ import * as signalR from "@microsoft/signalr";
 import "./App.css";
 
 function App() {
+    // Program elements
     const [connection, setConnection] = useState(null);
-    const [players, setPlayers] = useState([]);
     const [lobbyId, setLobbyId] = useState(null);
     const [playerName, setPlayerName] = useState(null);
+    const [players, setPlayers] = useState([]); // Needs to be replaced this with a lobby object.
+    const [lobbyState, setLobbyState] = useState(null);
 
     // UI elements
     const [inputPlayerName, setInputPlayerName] = useState("");
@@ -19,19 +21,32 @@ function App() {
                 .withAutomaticReconnect()
                 .build();
 
-            connection.on("LobbyCreated", (lobbyId) => {
+            // 'connection.on(...)' basically waits for the 'event' with the name of the first argument's string,
+            // and upon receiving it, executes the function (the second argument).
+            connection.on("LobbyCreated", (lobbyId, lobbyState) => {
                 console.log("Lobby created with ID:", lobbyId);
                 setLobbyId(lobbyId);
+                setLobbyState(lobbyState);
             });
 
-            connection.on("PlayerJoined", (playerName, lobbyId) => {
+            connection.on("LobbyJoined", (lobbyId, playerName, players, lobbyState) => {
+                setLobbyId(lobbyId);
+                setPlayerName(playerName);
+                setPlayers(players);
+                setLobbyState(lobbyState);
                 console.log("Player joined:", playerName);
-                setPlayerName(playerName); // Not sure about this
-                setLobbyId(lobbyId); // Or this
+            });
+
+            connection.on("LobbyAddPlayer", (playerName) => {
                 setPlayers((prev) => {
                     if (prev.includes(playerName)) return prev;
                     return [...prev, playerName];
                 });
+                console.add("Added player ", playerName, " to lobby")
+            });
+
+            connection.on("LobbyMatchStarted", (lobbyState) => {
+                setLobbyState(lobbyState);
             });
 
             connection.on("Error", (errorMsg) => {
@@ -62,6 +77,13 @@ function App() {
         }
     };
 
+    const startMatch = async (lobbyId) => {
+        if (connection) {
+            await connection.invoke("StartMatch", lobbyId);
+        }
+    };
+
+    // This UI is sort of temporary, currently work in progress.
     return (
         <div>
             <h1>Lobby Demo</h1>
@@ -88,7 +110,8 @@ function App() {
             {lobbyId && (
                 <>
                     <p>Lobby ID: {lobbyId}</p>
-                    {!playerName && (
+                    <p>Lobby State: {lobbyState}</p>
+                    {playerName && (
                         <p>Player name: {playerName}</p>
                     )}
                     <h2>Players:</h2>
@@ -97,6 +120,7 @@ function App() {
                             <li key={i}>{p}</li>
                         ))}
                     </ul>
+                    <button onClick={() => startMatch(lobbyId)}>Start Match</button>
                 </>
             )}
         </div>
