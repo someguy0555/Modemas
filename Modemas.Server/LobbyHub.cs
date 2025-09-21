@@ -7,6 +7,10 @@ namespace Modemas.Server
     {
         private static readonly ConcurrentDictionary<string, Lobby> Lobbies = new();
 
+        /// <summary>
+        /// Creates a new lobby. Adds the connection calling this method as a host.
+        /// </summary>
+        /// <returns>A task representing the async operation.</returns>
         public async Task CreateLobby()
         {
             var lobbyId = Guid.NewGuid().ToString("N").Substring(0, 6); // short code
@@ -17,12 +21,18 @@ namespace Modemas.Server
             };
             Lobbies[lobbyId] = lobby;
 
-            Console.WriteLine($"Created lobby {lobbyId}");
+            // Console.WriteLine($"Created lobby {lobbyId}");
 
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
             await Clients.Caller.SendAsync("LobbyCreated", lobbyId);
         }
 
+        /// <summary>
+        /// Adds a player to a lobby, if not already present.
+        /// </summary>
+        /// <param name="lobbyId">The ID of the lobby to join.</param>
+        /// <param name="playerName">The display name of the player. Cannot have multiple repeating names in the same lobby.</param>
+        /// <returns>A task representing the async operation.</returns>
         public async Task JoinLobby(string lobbyId, string playerName)
         {
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
@@ -49,7 +59,7 @@ namespace Modemas.Server
                 return;
             }
 
-            Console.WriteLine($"Joined lobby {lobbyId}, as {playerName}");
+            // Console.WriteLine($"Joined lobby {lobbyId}, as {playerName}");
 
             var player = new Player
             {
