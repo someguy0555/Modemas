@@ -3,6 +3,17 @@ using System.Collections.Concurrent;
 
 namespace Modemas.Server
 {
+    /// <summary>
+    /// A SignalR Hub that is responsible for managing lobbies.
+    /// <para>It's responsible for:</para>
+    /// <list type="bullet">
+    ///   <item><description>Creating lobbies</description></item>
+    ///   <item><description>Joining lobbies</description></item>
+    ///   <item><description>Tracking lobby membership</description></item>
+    ///   <item><description>Cleaning up when players disconnect</description></item>
+    ///   <item><description>Broadcasting updates to all players in a lobby</description></item>
+    /// </list>
+    /// </summary>
     public class LobbyHub : Hub
     {
         private static readonly ConcurrentDictionary<string, Lobby> Lobbies = new();

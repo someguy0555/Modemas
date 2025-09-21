@@ -1,5 +1,8 @@
 namespace Modemas.Server
 {
+    /// <summary>
+    /// Class is responsible for storing lobby data locally on the backend.
+    /// </summary>
     public class Lobby
     {
         public string LobbyId { get; set; } = "";
