@@ -14,55 +14,55 @@ function App() {
     const [inputPlayerName, setInputPlayerName] = useState("");
     const [inputLobbyId, setInputLobbyId] = useState("");
 
+    // Helper to connect to SignalR hub
+    const connectToHub = async () => {
+        const newConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/lobbyhub")
+            .withAutomaticReconnect()
+            .build();
+
+        newConnection.on("LobbyCreated", (lobbyId, lobbyState) => {
+            setLobbyId(lobbyId);
+            setLobbyState(lobbyState);
+        });
+        newConnection.on("LobbyJoined", (lobbyId, playerName, players, lobbyState) => {
+            setLobbyId(lobbyId);
+            setPlayerName(playerName);
+            setPlayers(players);
+            setLobbyState(lobbyState);
+        });
+        newConnection.on("LobbyAddPlayer", (playerName) => {
+            setPlayers((prev) => {
+                if (prev.includes(playerName)) return prev;
+                return [...prev, playerName];
+            });
+        });
+        newConnection.on("LobbyMatchStarted", (lobbyState) => {
+            setLobbyState(lobbyState);
+        });
+        newConnection.on("Error", (errorMsg) => {
+            console.log(errorMsg);
+        });
+        newConnection.on("KickedFromLobby", async (message) => {
+            await newConnection.stop();
+            alert("You were kicked out of the room: " + message);
+            setLobbyId(null);
+            setPlayerName(null);
+            setPlayers([]);
+            setLobbyState(null);
+            // Reconnect automatically so user can join/create again
+            await connectToHub();
+        });
+        try {
+            await newConnection.start();
+            setConnection(newConnection);
+        } catch (err) {
+            console.error("Connection failed: ", err);
+        }
+    };
+
     useEffect(() => {
-        const connect = async () => {
-            const connection = new signalR.HubConnectionBuilder()
-                .withUrl("/lobbyhub")
-                .withAutomaticReconnect()
-                .build();
-
-            // 'connection.on(...)' basically waits for the 'event' with the name of the first argument's string,
-            // and upon receiving it, executes the function (the second argument).
-            connection.on("LobbyCreated", (lobbyId, lobbyState) => {
-                console.log("Lobby created with ID:", lobbyId);
-                setLobbyId(lobbyId);
-                setLobbyState(lobbyState);
-            });
-
-            connection.on("LobbyJoined", (lobbyId, playerName, players, lobbyState) => {
-                setLobbyId(lobbyId);
-                setPlayerName(playerName);
-                setPlayers(players);
-                setLobbyState(lobbyState);
-                console.log("Player joined:", playerName);
-            });
-
-            connection.on("LobbyAddPlayer", (playerName) => {
-                setPlayers((prev) => {
-                    if (prev.includes(playerName)) return prev;
-                    return [...prev, playerName];
-                });
-                console.add("Added player ", playerName, " to lobby")
-            });
-
-            connection.on("LobbyMatchStarted", (lobbyState) => {
-                setLobbyState(lobbyState);
-            });
-
-            connection.on("Error", (errorMsg) => {
-                console.log(errorMsg);
-            });
-
-            try {
-                await connection.start();
-                console.log("Connected to SignalR hub");
-                setConnection(connection);
-            } catch (err) {
-                console.error("Connection failed: ", err);
-            }
-        };
-
-        connect();
+        connectToHub();
     }, []);
 
     const createLobby = async () => {
