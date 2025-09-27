@@ -1,0 +1,14 @@
+[
+  {
+    "question": "What is 2 + 2?",
+    "choices": ["1", "2", "3", "4"],
+    "correctAnswer": 3,
+    "timeLimit": 10
+  },
+  {
+    "question": "What color is the sky?",
+    "choices": ["Red", "Blue", "Green", "Yellow"],
+    "correctAnswer": 1,
+    "timeLimit": 8
+  }
+]

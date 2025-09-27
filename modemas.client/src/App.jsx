@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import * as signalR from "@microsoft/signalr";
 import LobbyJoinView from "./LobbyJoinView";
 import LobbyWaitingView from "./LobbyWaitingView";
+import LobbyStartedView from "./LobbyStartedView";
 import "./App.css";
 
 
 const LobbyState = {
     Waiting: 0,
     Started: 1,
-     Closed: 2,
+    Closed: 2,
 }
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
     const [players, setPlayers] = useState([]);
     const [lobbyState, setLobbyState] = useState(null);
     const [isHost, setIsHost] = useState(false);
+    const [question, setQuestion] = useState(null);
 
     // UI elements
     // const [inputPlayerName, setInputPlayerName] = useState("");
@@ -67,6 +69,19 @@ function App() {
             setIsHost(false);
             await connectToHub();
         });
+        newConnection.on("NewQuestion", (question) => {
+            setQuestion(question);
+            setTimeLeft(question.timeLimit);
+        });
+        newConnection.on("QuestionTimeout", (QuestionTimeoutMessage) => {
+            console.log(`${QuestionTimeoutMessage}`);
+        });
+        newConnection.on("MatchEnded", (lobbyId) => {
+            if (lobbyId == lobbyId) {
+                setQuestion(null);
+                console.log("Match ended! Returning to lobby");
+            }
+        });
         try {
             await newConnection.start();
             setConnection(newConnection);
@@ -106,7 +121,7 @@ function App() {
                 onJoinLobby={joinLobby}
             />
         );
-    } else if (lobbyState === LobbyState.Waiting || lobbyState === null) {
+    } else if (lobbyState === LobbyState.Waiting) {
         view = (
             <LobbyWaitingView
                 lobbyId={lobbyId}
@@ -117,8 +132,25 @@ function App() {
                 onStartMatch={() => startMatch(lobbyId)}
             />
         );
-    } else if (lobbyState === LobbyState.Started) {
-        view = <div>Game Started! (Placeholder for future GameView)</div>;
+    } else if (lobbyState === LobbyState.Started && question != null) {
+        // view = <div>Game Started! (Placeholder for future GameView)</div>;
+        view = (
+            <LobbyStartedView
+                lobbyId={lobbyId}
+                question={question}
+            />
+        );
+    } else {
+        view = (
+            <LobbyWaitingView
+                lobbyId={lobbyId}
+                lobbyState={lobbyState}
+                playerName={playerName}
+                players={players}
+                isHost={isHost}
+                onStartMatch={() => startMatch(lobbyId)}
+            />
+        );
     }
     return (
         <div className="App">

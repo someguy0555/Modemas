@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 export default function LobbyJoinView({ onCreateLobby, onJoinLobby }) {
-    // Local state specific to this view
     const [playerName, setPlayerName] = useState("");
     const [lobbyId, setLobbyId] = useState("");
 

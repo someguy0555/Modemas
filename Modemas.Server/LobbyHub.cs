@@ -96,15 +96,60 @@ namespace Modemas.Server
                 return;
             }
 
-            if (lobby.HostConnectionId == Context.ConnectionId)
+            if (lobby.State == LobbyState.Started)
             {
-                lobby.State = LobbyState.Started;
-                await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State);
+                await Clients.Caller.SendAsync("Error", "Cannot start a match while another is in progress.");
+                return;
             }
-            else
+
+            if (lobby.HostConnectionId != Context.ConnectionId)
             {
                 await Clients.Caller.SendAsync("Error", "Only the host can start the match");
+                return;
             }
+
+            var json = System.IO.File.ReadAllText("questions.json");
+            var questions = System.Text.Json.JsonSerializer.Deserialize<List<Question>>(json);
+
+            if (questions == null)
+            {
+                await Clients.Caller.SendAsync("Error", "There are no questions available.");
+                return;
+            }
+
+            lobby.Questions = questions;
+            lobby.CurrentQuestionIndex = 0;
+            lobby.State = LobbyState.Started;
+
+            await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State);
+            await SendNextQuestion(lobby);
+        }
+
+        private async Task SendNextQuestion(Lobby lobby)
+        {
+            if (lobby.CurrentQuestionIndex >= lobby.Questions.Count)
+            {
+                lobby.State = LobbyState.Waiting;
+                await Clients.Group(lobby.LobbyId).SendAsync("MatchEnded", lobby.LobbyId);
+                return;
+            }
+
+            var question = lobby.Questions[lobby.CurrentQuestionIndex];
+            await Clients.Group(lobby.LobbyId).SendAsync("NewQuestion", new
+            {
+                question.Text,
+                question.Choices,
+                question.TimeLimit
+            });
+            Console.WriteLine($"New Question: {question.Text}, {question.Choices}, {question.TimeLimit}");
+
+            var timeLimit = question.TimeLimit > 0 ? question.TimeLimit : 15;
+            await Task.Delay(timeLimit * 1000);
+
+            await Clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question: {lobby.CurrentQuestionIndex}!");
+
+            lobby.CurrentQuestionIndex++;
+            await SendNextQuestion(lobby);
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)

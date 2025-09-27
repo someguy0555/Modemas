@@ -9,5 +9,7 @@ namespace Modemas.Server
         public string HostConnectionId = "";
         public List<Player> Players = new();
         public LobbyState State = LobbyState.Waiting;
+        public List<Question> Questions = [];
+        public int CurrentQuestionIndex = 0;
     }
 }
