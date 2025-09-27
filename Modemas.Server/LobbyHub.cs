@@ -32,8 +32,6 @@ namespace Modemas.Server
             };
             Lobbies[lobbyId] = lobby;
 
-            // Console.WriteLine($"Created lobby {lobbyId}");
-
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
             await Clients.Caller.SendAsync("LobbyCreated", lobbyId, LobbyState.Waiting);
         }
@@ -122,34 +120,70 @@ namespace Modemas.Server
             lobby.State = LobbyState.Started;
 
             await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State);
-            await SendNextQuestion(lobby);
+            await RunMatch(lobby);
+
+            // We run this in the background as to not block things.
+            // _ = Task.Run(async () => await RunMatch(lobby));
         }
 
-        private async Task SendNextQuestion(Lobby lobby)
+        private async Task RunMatch(Lobby lobby)
         {
-            if (lobby.CurrentQuestionIndex >= lobby.Questions.Count)
+            lobby.State = LobbyState.Started;
+
+            while (lobby.CurrentQuestionIndex < lobby.Questions.Count)
             {
-                lobby.State = LobbyState.Waiting;
-                await Clients.Group(lobby.LobbyId).SendAsync("MatchEnded", lobby.LobbyId);
+                var question = lobby.Questions[lobby.CurrentQuestionIndex];
+                await Clients.Group(lobby.LobbyId).SendAsync("NewQuestion", question);
+                await Clients.Group(lobby.LobbyId).SendAsync("NewQuestion", new
+                {
+                    question.Text,
+                    question.Choices,
+                    question.TimeLimit
+                });
+                Console.WriteLine($"New Question: {question.Text}, {question.Choices}, {question.TimeLimit}");
+
+                await Task.Delay(question.TimeLimit * 1000);
+
+                await Clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question {lobby.CurrentQuestionIndex}!");
+
+                lobby.CurrentQuestionIndex++;
+            }
+
+            lobby.State = LobbyState.Waiting;
+            await Clients.Group(lobby.LobbyId).SendAsync("MatchEnded", lobby.LobbyId);
+        }
+
+        public async Task AnswerQuestion(string lobbyId, int answerIndex)
+        {
+            if (!Lobbies.TryGetValue(lobbyId, out var lobby))
+            {
+                await Clients.Caller.SendAsync("Error", "Lobby not found.");
                 return;
             }
 
-            var question = lobby.Questions[lobby.CurrentQuestionIndex];
-            await Clients.Group(lobby.LobbyId).SendAsync("NewQuestion", new
+            if (lobby.State != LobbyState.Started)
             {
-                question.Text,
-                question.Choices,
-                question.TimeLimit
-            });
-            Console.WriteLine($"New Question: {question.Text}, {question.Choices}, {question.TimeLimit}");
+                await Clients.Caller.SendAsync("Error", "No active match is running.");
+                return;
+            }
 
-            var timeLimit = question.TimeLimit > 0 ? question.TimeLimit : 15;
-            await Task.Delay(timeLimit * 1000);
+            var player = lobby.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+            if (player == null)
+            {
+                await Clients.Caller.SendAsync("Error", "You are not part of this lobby.");
+                return;
+            }
 
-            await Clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question: {lobby.CurrentQuestionIndex}!");
+            var currentQuestion = lobby.Questions[lobby.CurrentQuestionIndex];
+            if (answerIndex < 0 || answerIndex >= currentQuestion.Choices.Count)
+            {
+                await Clients.Caller.SendAsync("Error", "Invalid answer choice.");
+                return;
+            }
 
-            lobby.CurrentQuestionIndex++;
-            await SendNextQuestion(lobby);
+            // This function doesn't actually do anything currently :)
+            // ...
+            Console.WriteLine($"Player '{player.Name}' answered question {lobby.CurrentQuestionIndex} with option {answerIndex}.");
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)

@@ -78,6 +78,7 @@ function App() {
         });
         newConnection.on("MatchEnded", (lobbyId) => {
             if (lobbyId == lobbyId) {
+                setLobbyState(LobbyState.Waiting);
                 setQuestion(null);
                 console.log("Match ended! Returning to lobby");
             }
@@ -136,6 +137,7 @@ function App() {
         // view = <div>Game Started! (Placeholder for future GameView)</div>;
         view = (
             <LobbyStartedView
+                connection={connection}
                 lobbyId={lobbyId}
                 question={question}
             />
@@ -154,7 +156,6 @@ function App() {
     }
     return (
         <div className="App">
-            <h1>Lobby Demo</h1>
             {view}
         </div>
     );

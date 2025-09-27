@@ -1,16 +1,31 @@
 import { useEffect, useState } from "react";
 
-export default function LobbyStartedView({ lobbyId, question }) {
-    console.log(question)
+export default function LobbyStartedView({ connection, lobbyId, question }) {
+    const answerQuestion = async (anwserIndex) => {
+        if (connection && anwserIndex != null) {
+            await connection.invoke("AnswerQuestion", lobbyId, anwserIndex);
+        }
+    };
+
     if (!question) {
         return <p>Waiting for question...</p>
     }
+    console.log(question)
+
     return (
         <div>
             <h2>{question.text}</h2>
             <ul>
                 {question.choices?.map((choice, i) => (
-                    <li key={i}>{choice}</li>
+                    <li key={i}>
+                        <button onClick={
+                            () => {
+                                answerQuestion(i);
+                            }
+                        }>
+                            {choice}
+                        </button>
+                    </li>
                 ))}
             </ul>
         </div>
