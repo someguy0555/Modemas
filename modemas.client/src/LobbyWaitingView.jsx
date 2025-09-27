@@ -1,6 +1,13 @@
-import { useEffect, useState } from "react";
+/**
+ * View for waiting in a lobby before the match starts.
+ */
+export default function LobbyWaitingView({ connection, lobbyId, lobbyState, playerName, players, isHost }) {
+    const startMatch = async (lobbyId) => {
+        if (connection) {
+            await connection.invoke("StartMatch", lobbyId);
+        }
+    };
 
-export default function LobbyWaitingView({ lobbyId, lobbyState, playerName, players, isHost, onStartMatch }) {
     return (
         <div>
             <p>Lobby ID: {lobbyId}</p>
@@ -14,7 +21,7 @@ export default function LobbyWaitingView({ lobbyId, lobbyState, playerName, play
                 ))}
             </ul>
 
-            {isHost && <button onClick={onStartMatch}>Start Match</button>}
+            {isHost && <button onClick={() => startMatch(lobbyId)}>Start Match</button>}
         </div>
     );
 }

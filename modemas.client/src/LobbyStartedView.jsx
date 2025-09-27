@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-
+/**
+ * View for displaying the current question and choices during a match.
+ */
 export default function LobbyStartedView({ connection, lobbyId, question }) {
     const answerQuestion = async (anwserIndex) => {
         if (connection && anwserIndex != null) {

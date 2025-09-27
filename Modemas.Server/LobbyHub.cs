@@ -126,6 +126,14 @@ namespace Modemas.Server
             // _ = Task.Run(async () => await RunMatch(lobby));
         }
 
+        /// <summary>
+        /// Runs the match loop for a specific lobby. 
+        /// <para>This method sends each question to all clients in the lobby, waits for the question's time limit, 
+        /// and then sends a timeout notification. Once all questions have been sent, the match ends and the lobby state is set back to <see cref="LobbyState.Waiting"/>.</para>
+        /// </summary>
+        /// <param name="lobby">The <see cref="Lobby"/> instance for which the match should be run.</param>
+        /// <returns>A task representing the async operation.</returns>
+        /// <remarks> This is a fire-and-forget method. </remarks>
         private async Task RunMatch(Lobby lobby)
         {
             lobby.State = LobbyState.Started;
@@ -153,6 +161,15 @@ namespace Modemas.Server
             await Clients.Group(lobby.LobbyId).SendAsync("MatchEnded", lobby.LobbyId);
         }
 
+        /// <summary>
+        /// Handles an answer submitted by a player for the current question in a specific lobby.
+        /// <para>This method validates that the lobby exists, that the match is active, that the player is part of the lobby,
+        /// and that the answer index is valid for the current question.</para>
+        /// </summary>
+        /// <param name="lobbyId">The ID of the lobby in which the answer is being submitted.</param>
+        /// <param name="answerIndex">The index of the choice selected by the player.</param>
+        /// <returns>A task representing the async operation.</returns>
+        /// <remarks> Currently, this method does nothing. </remarks>
         public async Task AnswerQuestion(string lobbyId, int answerIndex)
         {
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
@@ -186,6 +203,15 @@ namespace Modemas.Server
             Console.WriteLine($"Player '{player.Name}' answered question {lobby.CurrentQuestionIndex} with option {answerIndex}.");
         }
 
+        /// <summary>
+        /// Called automatically when a client disconnects from the hub.
+        /// <para>This method checks whether the disconnecting client is a player or host in any lobby. 
+        /// If a player disconnects, they are removed from the lobby and the remaining players are notified. 
+        /// If the host disconnects, all players are kicked, the lobby is closed, and the lobby is removed from the global list.</para>
+        /// </summary>
+        /// <param name="exception">The exception that triggered the disconnect, if any.</param>
+        /// <returns>A task representing the async operation.</returns>
+        /// <remarks> This method ensures proper cleanup of lobbies and notification of clients when a disconnect occurs. </remarks>
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             foreach (var kvp in Lobbies)

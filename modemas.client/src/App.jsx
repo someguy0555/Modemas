@@ -22,10 +22,6 @@ function App() {
     const [isHost, setIsHost] = useState(false);
     const [question, setQuestion] = useState(null);
 
-    // UI elements
-    // const [inputPlayerName, setInputPlayerName] = useState("");
-    // const [inputLobbyId, setInputLobbyId] = useState("");
-
     // Helper to connect to SignalR hub
     const connectToHub = async () => {
         const newConnection = new signalR.HubConnectionBuilder()
@@ -95,42 +91,23 @@ function App() {
         connectToHub();
     }, []);
 
-    const createLobby = async () => {
-        if (connection) {
-            await connection.invoke("CreateLobby");
-        }
-    };
-
-    const joinLobby = async (lobbyId, playerName) => {
-        if (connection && lobbyId && playerName) {
-            await connection.invoke("JoinLobby", lobbyId, playerName);
-        }
-    };
-
-    const startMatch = async (lobbyId) => {
-        if (connection) {
-            await connection.invoke("StartMatch", lobbyId);
-        }
-    };
-
     // Picks which view to render
     let view;
     if (!lobbyId) {
         view = (
             <LobbyJoinView
-                onCreateLobby={createLobby}
-                onJoinLobby={joinLobby}
+                connection={connection}
             />
         );
     } else if (lobbyState === LobbyState.Waiting) {
         view = (
             <LobbyWaitingView
+                connection={connection}
                 lobbyId={lobbyId}
                 lobbyState={lobbyState}
                 playerName={playerName}
                 players={players}
                 isHost={isHost}
-                onStartMatch={() => startMatch(lobbyId)}
             />
         );
     } else if (lobbyState === LobbyState.Started && question != null) {
@@ -145,6 +122,7 @@ function App() {
     } else {
         view = (
             <LobbyWaitingView
+                connection={connection}
                 lobbyId={lobbyId}
                 lobbyState={lobbyState}
                 playerName={playerName}
