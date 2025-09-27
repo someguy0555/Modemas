@@ -5,9 +5,9 @@ namespace Modemas.Server
     /// </summary>
     public class Lobby
     {
-        public string LobbyId { get; set; } = "";
-        public string HostConnectionId { get; set; } = "";
-        public List<Player> Players { get; set; } = new();
-        public LobbyState State { get; set; } = LobbyState.Waiting;
+        public string LobbyId = "";
+        public string HostConnectionId = "";
+        public List<Player> Players = new();
+        public LobbyState State = LobbyState.Waiting;
     }
 }

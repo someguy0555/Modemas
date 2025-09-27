@@ -2,7 +2,7 @@ namespace Modemas.Server
 {
     public class Player
     {
-        public string Name { get; set; } = "";
-        public string ConnectionId { get; set; } = "";
+        public string Name = "";
+        public string ConnectionId = "";
     }
 }
