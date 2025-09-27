@@ -124,7 +124,7 @@ namespace Modemas.Server
                 if (lobby.HostConnectionId == Context.ConnectionId)
                 {
                     // Inform all players they are kicked
-                    foreach (var p in lobby.Players)
+                    foreach (var p in lobby.Players.ToList())
                     {
                         await Clients.Client(p.ConnectionId).SendAsync("KickedFromLobby", "Host disconnected");
                         await Groups.RemoveFromGroupAsync(p.ConnectionId, lobby.LobbyId);

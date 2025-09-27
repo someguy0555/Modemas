@@ -1,14 +1,24 @@
 import { useEffect, useState } from "react";
 import * as signalR from "@microsoft/signalr";
+import LobbyJoinView from "./LobbyJoinView";
+import LobbyWaitingView from "./LobbyWaitingView";
 import "./App.css";
+
+
+const LobbyState = {
+    Waiting: 0,
+    Started: 1,
+     Closed: 2,
+}
 
 function App() {
     // Program elements
     const [connection, setConnection] = useState(null);
     const [lobbyId, setLobbyId] = useState(null);
     const [playerName, setPlayerName] = useState(null);
-    const [players, setPlayers] = useState([]); // Needs to be replaced this with a lobby object.
+    const [players, setPlayers] = useState([]);
     const [lobbyState, setLobbyState] = useState(null);
+    const [isHost, setIsHost] = useState(false);
 
     // UI elements
     const [inputPlayerName, setInputPlayerName] = useState("");
@@ -24,12 +34,16 @@ function App() {
         newConnection.on("LobbyCreated", (lobbyId, lobbyState) => {
             setLobbyId(lobbyId);
             setLobbyState(lobbyState);
+            setIsHost(true);
+            console.log(lobbyState)
         });
         newConnection.on("LobbyJoined", (lobbyId, playerName, players, lobbyState) => {
             setLobbyId(lobbyId);
             setPlayerName(playerName);
             setPlayers(players);
             setLobbyState(lobbyState);
+            setIsHost(false);
+            console.log(lobbyState)
         });
         newConnection.on("LobbyAddPlayer", (playerName) => {
             setPlayers((prev) => {
@@ -50,7 +64,7 @@ function App() {
             setPlayerName(null);
             setPlayers([]);
             setLobbyState(null);
-            // Reconnect automatically so user can join/create again
+            setIsHost(false);
             await connectToHub();
         });
         try {
@@ -72,7 +86,7 @@ function App() {
     };
 
     const joinLobby = async (lobbyId, playerName) => {
-        if (connection && lobbyId) {
+        if (connection && lobbyId && playerName) {
             await connection.invoke("JoinLobby", lobbyId, playerName);
         }
     };
@@ -83,46 +97,39 @@ function App() {
         }
     };
 
-    // This UI is sort of temporary, currently work in progress.
+    // Picks which view to render
+    let view;
+    if (!lobbyId) {
+        view = (
+            <LobbyJoinView
+                onCreateLobby={createLobby}
+                onJoinLobby={joinLobby}
+                inputPlayerName={inputPlayerName}
+                setInputPlayerName={setInputPlayerName}
+                inputLobbyId={inputLobbyId}
+                setInputLobbyId={setInputLobbyId}
+            />
+        );
+    } else if (lobbyState === LobbyState.Waiting || lobbyState === null) {
+        view = (
+            <LobbyWaitingView
+                lobbyId={lobbyId}
+                lobbyState={lobbyState}
+                playerName={playerName}
+                players={players}
+                isHost={isHost}
+                onStartMatch={() => startMatch(lobbyId)}
+            />
+        );
+    } else if (lobbyState === LobbyState.Started) {
+        view = <div>Game Started! (Placeholder for future GameView)</div>;
+    } else if () {
+    }
+
     return (
-        <div>
+        <div className="App">
             <h1>Lobby Demo</h1>
-
-            {!lobbyId && (
-                <>
-                    <button onClick={createLobby}>Create Lobby</button>
-                    <input
-                        type="text"
-                        placeholder="Enter your name"
-                        value={inputPlayerName}
-                        onChange={(e) => setInputPlayerName(e.target.value)}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Enter Lobby ID"
-                        value={inputLobbyId}
-                        onChange={(e) => setInputLobbyId(e.target.value)}
-                    />
-                    <button onClick={() => joinLobby(inputLobbyId, inputPlayerName)}>Join Lobby</button>
-                </>
-            )}
-
-            {lobbyId && (
-                <>
-                    <p>Lobby ID: {lobbyId}</p>
-                    <p>Lobby State: {lobbyState}</p>
-                    {playerName && (
-                        <p>Player name: {playerName}</p>
-                    )}
-                    <h2>Players:</h2>
-                    <ul>
-                        {players.map((p, i) => (
-                            <li key={i}>{p}</li>
-                        ))}
-                    </ul>
-                    <button onClick={() => startMatch(lobbyId)}>Start Match</button>
-                </>
-            )}
+            {view}
         </div>
     );
 }
