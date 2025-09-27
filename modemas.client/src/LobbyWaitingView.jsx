@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export default function LobbyWaitingView({ lobbyId, lobbyState, playerName, players, isHost, onStartMatch }) {
     return (
         <div>

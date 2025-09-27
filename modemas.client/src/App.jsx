@@ -21,8 +21,8 @@ function App() {
     const [isHost, setIsHost] = useState(false);
 
     // UI elements
-    const [inputPlayerName, setInputPlayerName] = useState("");
-    const [inputLobbyId, setInputLobbyId] = useState("");
+    // const [inputPlayerName, setInputPlayerName] = useState("");
+    // const [inputLobbyId, setInputLobbyId] = useState("");
 
     // Helper to connect to SignalR hub
     const connectToHub = async () => {
@@ -104,10 +104,6 @@ function App() {
             <LobbyJoinView
                 onCreateLobby={createLobby}
                 onJoinLobby={joinLobby}
-                inputPlayerName={inputPlayerName}
-                setInputPlayerName={setInputPlayerName}
-                inputLobbyId={inputLobbyId}
-                setInputLobbyId={setInputLobbyId}
             />
         );
     } else if (lobbyState === LobbyState.Waiting || lobbyState === null) {
@@ -123,9 +119,7 @@ function App() {
         );
     } else if (lobbyState === LobbyState.Started) {
         view = <div>Game Started! (Placeholder for future GameView)</div>;
-    } else if () {
     }
-
     return (
         <div className="App">
             <h1>Lobby Demo</h1>
