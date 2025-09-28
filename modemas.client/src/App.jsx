@@ -1,18 +1,26 @@
 import { useEffect, useState } from "react";
 import * as signalR from "@microsoft/signalr";
+import LobbyJoinView from "./LobbyJoinView";
+import LobbyWaitingView from "./LobbyWaitingView";
+import LobbyStartedView from "./LobbyStartedView";
 import "./App.css";
+
+
+const LobbyState = {
+    Waiting: 0,
+    Started: 1,
+    Closed: 2,
+}
 
 function App() {
     // Program elements
     const [connection, setConnection] = useState(null);
     const [lobbyId, setLobbyId] = useState(null);
     const [playerName, setPlayerName] = useState(null);
-    const [players, setPlayers] = useState([]); // Needs to be replaced this with a lobby object.
+    const [players, setPlayers] = useState([]);
     const [lobbyState, setLobbyState] = useState(null);
-
-    // UI elements
-    const [inputPlayerName, setInputPlayerName] = useState("");
-    const [inputLobbyId, setInputLobbyId] = useState("");
+    const [isHost, setIsHost] = useState(false);
+    const [question, setQuestion] = useState(null);
 
     // Helper to connect to SignalR hub
     const connectToHub = async () => {
@@ -24,12 +32,16 @@ function App() {
         newConnection.on("LobbyCreated", (lobbyId, lobbyState) => {
             setLobbyId(lobbyId);
             setLobbyState(lobbyState);
+            setIsHost(true);
+            console.log(lobbyState)
         });
         newConnection.on("LobbyJoined", (lobbyId, playerName, players, lobbyState) => {
             setLobbyId(lobbyId);
             setPlayerName(playerName);
             setPlayers(players);
             setLobbyState(lobbyState);
+            setIsHost(false);
+            console.log(lobbyState)
         });
         newConnection.on("LobbyAddPlayer", (playerName) => {
             setPlayers((prev) => {
@@ -50,8 +62,22 @@ function App() {
             setPlayerName(null);
             setPlayers([]);
             setLobbyState(null);
-            // Reconnect automatically so user can join/create again
+            setIsHost(false);
             await connectToHub();
+        });
+        newConnection.on("NewQuestion", (question) => {
+            setQuestion(question);
+            setTimeLeft(question.timeLimit);
+        });
+        newConnection.on("QuestionTimeout", (QuestionTimeoutMessage) => {
+            console.log(`${QuestionTimeoutMessage}`);
+        });
+        newConnection.on("MatchEnded", (lobbyId) => {
+            if (lobbyId == lobbyId) {
+                setLobbyState(LobbyState.Waiting);
+                setQuestion(null);
+                console.log("Match ended! Returning to lobby");
+            }
         });
         try {
             await newConnection.start();
@@ -65,64 +91,50 @@ function App() {
         connectToHub();
     }, []);
 
-    const createLobby = async () => {
-        if (connection) {
-            await connection.invoke("CreateLobby");
-        }
-    };
-
-    const joinLobby = async (lobbyId, playerName) => {
-        if (connection && lobbyId) {
-            await connection.invoke("JoinLobby", lobbyId, playerName);
-        }
-    };
-
-    const startMatch = async (lobbyId) => {
-        if (connection) {
-            await connection.invoke("StartMatch", lobbyId);
-        }
-    };
-
-    // This UI is sort of temporary, currently work in progress.
+    // Picks which view to render
+    let view;
+    if (!lobbyId) {
+        view = (
+            <LobbyJoinView
+                connection={connection}
+            />
+        );
+    } else if (lobbyState === LobbyState.Waiting) {
+        view = (
+            <LobbyWaitingView
+                connection={connection}
+                lobbyId={lobbyId}
+                lobbyState={lobbyState}
+                playerName={playerName}
+                players={players}
+                isHost={isHost}
+            />
+        );
+    } else if (lobbyState === LobbyState.Started && question != null) {
+        // view = <div>Game Started! (Placeholder for future GameView)</div>;
+        view = (
+            <LobbyStartedView
+                connection={connection}
+                lobbyId={lobbyId}
+                question={question}
+            />
+        );
+    } else {
+        view = (
+            <LobbyWaitingView
+                connection={connection}
+                lobbyId={lobbyId}
+                lobbyState={lobbyState}
+                playerName={playerName}
+                players={players}
+                isHost={isHost}
+                onStartMatch={() => startMatch(lobbyId)}
+            />
+        );
+    }
     return (
-        <div>
-            <h1>Lobby Demo</h1>
-
-            {!lobbyId && (
-                <>
-                    <button onClick={createLobby}>Create Lobby</button>
-                    <input
-                        type="text"
-                        placeholder="Enter your name"
-                        value={inputPlayerName}
-                        onChange={(e) => setInputPlayerName(e.target.value)}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Enter Lobby ID"
-                        value={inputLobbyId}
-                        onChange={(e) => setInputLobbyId(e.target.value)}
-                    />
-                    <button onClick={() => joinLobby(inputLobbyId, inputPlayerName)}>Join Lobby</button>
-                </>
-            )}
-
-            {lobbyId && (
-                <>
-                    <p>Lobby ID: {lobbyId}</p>
-                    <p>Lobby State: {lobbyState}</p>
-                    {playerName && (
-                        <p>Player name: {playerName}</p>
-                    )}
-                    <h2>Players:</h2>
-                    <ul>
-                        {players.map((p, i) => (
-                            <li key={i}>{p}</li>
-                        ))}
-                    </ul>
-                    <button onClick={() => startMatch(lobbyId)}>Start Match</button>
-                </>
-            )}
+        <div className="App">
+            {view}
         </div>
     );
 }

@@ -32,8 +32,6 @@ namespace Modemas.Server
             };
             Lobbies[lobbyId] = lobby;
 
-            // Console.WriteLine($"Created lobby {lobbyId}");
-
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
             await Clients.Caller.SendAsync("LobbyCreated", lobbyId, LobbyState.Waiting);
         }
@@ -96,17 +94,124 @@ namespace Modemas.Server
                 return;
             }
 
-            if (lobby.HostConnectionId == Context.ConnectionId)
+            if (lobby.State == LobbyState.Started)
             {
-                lobby.State = LobbyState.Started;
-                await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State);
+                await Clients.Caller.SendAsync("Error", "Cannot start a match while another is in progress.");
+                return;
             }
-            else
+
+            if (lobby.HostConnectionId != Context.ConnectionId)
             {
                 await Clients.Caller.SendAsync("Error", "Only the host can start the match");
+                return;
             }
+
+            var json = System.IO.File.ReadAllText("questions.json");
+            var questions = System.Text.Json.JsonSerializer.Deserialize<List<Question>>(json);
+
+            if (questions == null)
+            {
+                await Clients.Caller.SendAsync("Error", "There are no questions available.");
+                return;
+            }
+
+            lobby.Questions = questions;
+            lobby.CurrentQuestionIndex = 0;
+            lobby.State = LobbyState.Started;
+
+            await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State);
+            await RunMatch(lobby);
+
+            // We run this in the background as to not block things.
+            // _ = Task.Run(async () => await RunMatch(lobby));
         }
 
+        /// <summary>
+        /// Runs the match loop for a specific lobby. 
+        /// <para>This method sends each question to all clients in the lobby, waits for the question's time limit, 
+        /// and then sends a timeout notification. Once all questions have been sent, the match ends and the lobby state is set back to <see cref="LobbyState.Waiting"/>.</para>
+        /// </summary>
+        /// <param name="lobby">The <see cref="Lobby"/> instance for which the match should be run.</param>
+        /// <returns>A task representing the async operation.</returns>
+        /// <remarks> This is a fire-and-forget method. </remarks>
+        private async Task RunMatch(Lobby lobby)
+        {
+            lobby.State = LobbyState.Started;
+
+            while (lobby.CurrentQuestionIndex < lobby.Questions.Count)
+            {
+                var question = lobby.Questions[lobby.CurrentQuestionIndex];
+                await Clients.Group(lobby.LobbyId).SendAsync("NewQuestion", question);
+                await Clients.Group(lobby.LobbyId).SendAsync("NewQuestion", new
+                {
+                    question.Text,
+                    question.Choices,
+                    question.TimeLimit
+                });
+                Console.WriteLine($"New Question: {question.Text}, {question.Choices}, {question.TimeLimit}");
+
+                await Task.Delay(question.TimeLimit * 1000);
+
+                await Clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question {lobby.CurrentQuestionIndex}!");
+
+                lobby.CurrentQuestionIndex++;
+            }
+
+            lobby.State = LobbyState.Waiting;
+            await Clients.Group(lobby.LobbyId).SendAsync("MatchEnded", lobby.LobbyId);
+        }
+
+        /// <summary>
+        /// Handles an answer submitted by a player for the current question in a specific lobby.
+        /// <para>This method validates that the lobby exists, that the match is active, that the player is part of the lobby,
+        /// and that the answer index is valid for the current question.</para>
+        /// </summary>
+        /// <param name="lobbyId">The ID of the lobby in which the answer is being submitted.</param>
+        /// <param name="answerIndex">The index of the choice selected by the player.</param>
+        /// <returns>A task representing the async operation.</returns>
+        /// <remarks> Currently, this method does nothing. </remarks>
+        public async Task AnswerQuestion(string lobbyId, int answerIndex)
+        {
+            if (!Lobbies.TryGetValue(lobbyId, out var lobby))
+            {
+                await Clients.Caller.SendAsync("Error", "Lobby not found.");
+                return;
+            }
+
+            if (lobby.State != LobbyState.Started)
+            {
+                await Clients.Caller.SendAsync("Error", "No active match is running.");
+                return;
+            }
+
+            var player = lobby.Players.FirstOrDefault(p => p.ConnectionId == Context.ConnectionId);
+            if (player == null)
+            {
+                await Clients.Caller.SendAsync("Error", "You are not part of this lobby.");
+                return;
+            }
+
+            var currentQuestion = lobby.Questions[lobby.CurrentQuestionIndex];
+            if (answerIndex < 0 || answerIndex >= currentQuestion.Choices.Count)
+            {
+                await Clients.Caller.SendAsync("Error", "Invalid answer choice.");
+                return;
+            }
+
+            // This function doesn't actually do anything currently :)
+            // ...
+            Console.WriteLine($"Player '{player.Name}' answered question {lobby.CurrentQuestionIndex} with option {answerIndex}.");
+        }
+
+        /// <summary>
+        /// Called automatically when a client disconnects from the hub.
+        /// <para>This method checks whether the disconnecting client is a player or host in any lobby. 
+        /// If a player disconnects, they are removed from the lobby and the remaining players are notified. 
+        /// If the host disconnects, all players are kicked, the lobby is closed, and the lobby is removed from the global list.</para>
+        /// </summary>
+        /// <param name="exception">The exception that triggered the disconnect, if any.</param>
+        /// <returns>A task representing the async operation.</returns>
+        /// <remarks> This method ensures proper cleanup of lobbies and notification of clients when a disconnect occurs. </remarks>
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
             foreach (var kvp in Lobbies)
@@ -124,7 +229,7 @@ namespace Modemas.Server
                 if (lobby.HostConnectionId == Context.ConnectionId)
                 {
                     // Inform all players they are kicked
-                    foreach (var p in lobby.Players)
+                    foreach (var p in lobby.Players.ToList())
                     {
                         await Clients.Client(p.ConnectionId).SendAsync("KickedFromLobby", "Host disconnected");
                         await Groups.RemoveFromGroupAsync(p.ConnectionId, lobby.LobbyId);
