@@ -24,7 +24,7 @@ namespace Modemas.Server
         /// <returns>A task representing the async operation.</returns>
         public async Task CreateLobby()
         {
-            var lobbyId = Guid.NewGuid().ToString("N").Substring(0, 8); // short code
+            var lobbyId = Guid.NewGuid().ToString("N").Substring(0, 4); // short code
             var lobby = new Lobby
             {
                 LobbyId = lobbyId,
