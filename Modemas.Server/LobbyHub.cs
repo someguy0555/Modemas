@@ -19,21 +19,27 @@ namespace Modemas.Server
         private static readonly ConcurrentDictionary<string, Lobby> Lobbies = new();
 
         /// <summary>
-        /// Creates a new lobby. Adds the connection calling this method as a host.
+        /// Creates a new lobby and adds the creator as the first player.
         /// </summary>
+        /// <param name="creatorName">The display name of the lobby creator.</param>
         /// <returns>A task representing the async operation.</returns>
-        public async Task CreateLobby()
+        public async Task CreateLobby(string creatorName)
         {
-            var lobbyId = Guid.NewGuid().ToString("N").Substring(0, 8); // short code
+            var lobbyId = Guid.NewGuid().ToString("N").Substring(0, 4); // short code
             var lobby = new Lobby
             {
                 LobbyId = lobbyId,
-                HostConnectionId = Context.ConnectionId
+                HostConnectionId = Context.ConnectionId,
+                CreatorName = creatorName
             };
+            // Add creator as the first player
+            lobby.Players.Add(new Player { Name = creatorName, ConnectionId = Context.ConnectionId });
             Lobbies[lobbyId] = lobby;
 
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
-            await Clients.Caller.SendAsync("LobbyCreated", lobbyId, LobbyState.Waiting);
+            Console.WriteLine($"Sending LobbyPlayersUpdated after lobby creation: {string.Join(", ", lobby.Players.Select(p => p.Name))}");
+            await Clients.Group(lobbyId).SendAsync("LobbyPlayersUpdated", lobby.Players.Select(p => p.Name).ToList());
+            await Clients.Caller.SendAsync("LobbyCreated", lobbyId, LobbyState.Waiting, lobby.Players.Select(p => p.Name).ToList());
         }
 
         /// <summary>
@@ -77,7 +83,8 @@ namespace Modemas.Server
             lobby.Players.Add(player);
 
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
-            await Clients.Group(lobbyId).SendAsync("LobbyAddPlayer", playerName);
+            Console.WriteLine($"Sending LobbyPlayersUpdated after player join: {string.Join(", ", lobby.Players.Select(p => p.Name))}");
+            await Clients.Group(lobbyId).SendAsync("LobbyPlayersUpdated", lobby.Players.Select(p => p.Name).ToList());
             await Clients.Caller.SendAsync("LobbyJoined", lobbyId, playerName, lobby.Players.Select(p => p.Name), lobby.State);
         }
 
@@ -146,11 +153,11 @@ namespace Modemas.Server
                 {
                     question.Text,
                     question.Choices,
-                    question.TimeLimit
+                    TimeLimit = lobby.QuestionTimer // Always use lobby's timer
                 });
-                Console.WriteLine($"New Question: {question.Text}, {question.Choices}, {question.TimeLimit}");
+                Console.WriteLine($"New Question: {question.Text}, {question.Choices}, Timer: {lobby.QuestionTimer}");
 
-                await Task.Delay(question.TimeLimit * 1000);
+                await Task.Delay(lobby.QuestionTimer * 1000); // Use lobby's timer for every question
 
                 await Clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question {lobby.CurrentQuestionIndex}!");
 
@@ -223,6 +230,8 @@ namespace Modemas.Server
                 {
                     lobby.Players.Remove(player);
                     await Clients.Group(lobby.LobbyId).SendAsync("PlayerLeft", player.Name);
+                    Console.WriteLine($"Sending LobbyPlayersUpdated after player leave: {string.Join(", ", lobby.Players.Select(p => p.Name))}");
+                    await Clients.Group(lobby.LobbyId).SendAsync("LobbyPlayersUpdated", lobby.Players.Select(p => p.Name).ToList());
                     break;
                 }
 
