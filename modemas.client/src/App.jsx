@@ -17,6 +17,7 @@ function App() {
     const [connection, setConnection] = useState(null);
     const [lobbyId, setLobbyId] = useState(null);
     const [playerName, setPlayerName] = useState(null);
+    const [pendingPlayerName, setPendingPlayerName] = useState("");
     const [players, setPlayers] = useState([]);
     const [lobbyState, setLobbyState] = useState(null);
     const [isHost, setIsHost] = useState(false);
@@ -29,9 +30,11 @@ function App() {
             .withAutomaticReconnect()
             .build();
 
-        newConnection.on("LobbyCreated", (lobbyId, lobbyState) => {
+        newConnection.on("LobbyCreated", (lobbyId, lobbyState, playersList) => {
             setLobbyId(lobbyId);
             setLobbyState(lobbyState);
+            setPlayers(playersList); // Ensure host is included in player box
+            setPlayerName(pendingPlayerName); // Set host's name
             setIsHost(true);
             console.log(lobbyState)
         });
@@ -97,6 +100,8 @@ function App() {
         view = (
             <LobbyJoinView
                 connection={connection}
+                playerName={pendingPlayerName}
+                setPlayerName={setPendingPlayerName}
             />
         );
     } else if (lobbyState === LobbyState.Waiting) {
