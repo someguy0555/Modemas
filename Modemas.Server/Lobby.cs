@@ -11,5 +11,10 @@ namespace Modemas.Server
         public LobbyState State = LobbyState.Waiting;
         public List<Question> Questions = [];
         public int CurrentQuestionIndex = 0;
+        
+        // Customization options
+        public int NumberOfQuestions = 10;
+        public string Theme = "";
+        public int QuestionTimer = 10; //Seconds
     }
 }

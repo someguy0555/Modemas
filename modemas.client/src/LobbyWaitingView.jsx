@@ -1,12 +1,34 @@
+import { useEffect, useState } from "react";
+
 /**
  * View for waiting in a lobby before the match starts.
  */
 export default function LobbyWaitingView({ connection, lobbyId, lobbyState, playerName, players, isHost }) {
+    const [numberOfQuestions, setNumberOfQuestions] = useState(10);
+    const [theme, setTheme] = useState("");
+    const [questionTimer, setQuestionTimer] = useState(10);
+
     const startMatch = async (lobbyId) => {
         if (connection) {
             await connection.invoke("StartMatch", lobbyId);
         }
     };
+
+    const updateSettings = async () => {
+        if (connection) {
+            await connection.invoke("UpdateLobbySettings", lobbyId, numberOfQuestions, theme, questionTimer);
+        }
+    };
+
+    useEffect(() => {
+        if (isHost && connection) {
+            connection.on("LobbySettingsUpdated", (num, th, timer) => {
+                setNumberOfQuestions(num);
+                setTheme(th);
+                setQuestionTimer(timer);
+            });
+        }
+    }, [connection, isHost]);
 
     return (
         <div>
@@ -21,7 +43,36 @@ export default function LobbyWaitingView({ connection, lobbyId, lobbyState, play
                 ))}
             </ul>
 
-            {isHost && <button onClick={() => startMatch(lobbyId)}>Start Match</button>}
+            {isHost && (
+                <div>
+                    <h3>Lobby Customization</h3>
+                    <input 
+                        type="text" 
+                        placeholder="Theme"
+                        value={theme} 
+                        onChange={e => setTheme(e.target.value)}
+                    />
+                    <br />
+                    Number of Questions:
+                    <input 
+                        type="number" 
+                        min={1} 
+                        value={numberOfQuestions} 
+                        onChange={e => setNumberOfQuestions(Number(e.target.value))}
+                    />
+                    <br />
+                    Timer per Question (seconds):
+                    <input 
+                        type="number" 
+                        min={1} 
+                        value={questionTimer} 
+                        onChange={e => setQuestionTimer(Number(e.target.value))}
+                    />
+                    <br />
+                    <button onClick={updateSettings}>Save Settings</button>
+                    <button onClick={() => startMatch(lobbyId)}>Start Match</button>
+                </div>
+            )}
         </div>
     );
 }
