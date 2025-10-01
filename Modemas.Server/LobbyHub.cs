@@ -4,25 +4,10 @@ using System.IO;
 
 namespace Modemas.Server
 {
-    /// <summary>
-    /// A SignalR Hub that is responsible for managing lobbies.
-    /// <para>It's responsible for:</para>
-    /// <list type="bullet">
-    ///   <item><description>Creating lobbies</description></item>
-    ///   <item><description>Joining lobbies</description></item>
-    ///   <item><description>Tracking lobby membership</description></item>
-    ///   <item><description>Cleaning up when players disconnect</description></item>
-    ///   <item><description>Broadcasting updates to all players in a lobby</description></item>
-    /// </list>
-    /// </summary>
     public class LobbyHub : Hub
     {
         private static readonly ConcurrentDictionary<string, Lobby> Lobbies = new();
-
-        /// <summary>
-        /// Creates a new lobby. Adds the connection calling this method as a host.
-        /// </summary>
-        /// <returns>A task representing the async operation.</returns>
+        
         public async Task CreateLobby()
         {
             var lobbyId = Guid.NewGuid().ToString("N").Substring(0, 8); // short code
@@ -36,13 +21,7 @@ namespace Modemas.Server
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
             await Clients.Caller.SendAsync("LobbyCreated", lobbyId, LobbyState.Waiting);
         }
-
-        /// <summary>
-        /// Adds a player to a lobby, if not already present.
-        /// </summary>
-        /// <param name="lobbyId">The ID of the lobby to join.</param>
-        /// <param name="playerName">The display name of the player. Cannot have multiple repeating names in the same lobby.</param>
-        /// <returns>A task representing the async operation.</returns>
+        
         public async Task JoinLobby(string lobbyId, string playerName)
         {
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
@@ -81,12 +60,7 @@ namespace Modemas.Server
             await Clients.Group(lobbyId).SendAsync("LobbyAddPlayer", playerName);
             await Clients.Caller.SendAsync("LobbyJoined", lobbyId, playerName, lobby.Players.Select(p => p.Name), lobby.State);
         }
-
-        /// <summary>
-        /// Starts a the match in a lobby. Currently doesn't have much use other then setting lobbyState to LobbyState.Started.
-        /// </summary>
-        /// <param name="lobbyId">The ID of the lobby to join.</param>
-        /// <returns>A task representing the async operation.</returns>
+        
         public async Task StartMatch(string lobbyId, string topic)
         {
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
@@ -107,7 +81,7 @@ namespace Modemas.Server
                 return;
             }
 
-            // Use only the filename, since working directory is already Modemas.Server
+
             var topicFile = $"{topic}.json";
             var fullPath = Path.GetFullPath(topicFile);
             Console.WriteLine($"Looking for topic file at: {fullPath}");
@@ -133,19 +107,8 @@ namespace Modemas.Server
 
             await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State, topic);
             await RunMatch(lobby);
-
-            // We run this in the background as to not block things.
-            // _ = Task.Run(async () => await RunMatch(lobby));
         }
-
-        /// <summary>
-        /// Runs the match loop for a specific lobby. 
-        /// <para>This method sends each question to all clients in the lobby, waits for the question's time limit, 
-        /// and then sends a timeout notification. Once all questions have been sent, the match ends and the lobby state is set back to <see cref="LobbyState.Waiting"/>.</para>
-        /// </summary>
-        /// <param name="lobby">The <see cref="Lobby"/> instance for which the match should be run.</param>
-        /// <returns>A task representing the async operation.</returns>
-        /// <remarks> This is a fire-and-forget method. </remarks>
+        
         private async Task RunMatch(Lobby lobby)
         {
             lobby.State = LobbyState.Started;
@@ -172,16 +135,7 @@ namespace Modemas.Server
             lobby.State = LobbyState.Waiting;
             await Clients.Group(lobby.LobbyId).SendAsync("MatchEnded", lobby.LobbyId);
         }
-
-        /// <summary>
-        /// Handles an answer submitted by a player for the current question in a specific lobby.
-        /// <para>This method validates that the lobby exists, that the match is active, that the player is part of the lobby,
-        /// and that the answer index is valid for the current question.</para>
-        /// </summary>
-        /// <param name="lobbyId">The ID of the lobby in which the answer is being submitted.</param>
-        /// <param name="answerIndex">The index of the choice selected by the player.</param>
-        /// <returns>A task representing the async operation.</returns>
-        /// <remarks> Currently, this method does nothing. </remarks>
+        
         public async Task AnswerQuestion(string lobbyId, int answerIndex)
         {
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
