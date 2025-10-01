@@ -51,6 +51,7 @@ function App() {
         });
         newConnection.on("LobbyMatchStarted", (lobbyState) => {
             setLobbyState(lobbyState);
+            setQuestion(null); // Reset question when match starts
         });
         newConnection.on("Error", (errorMsg) => {
             console.log(errorMsg);
@@ -75,7 +76,7 @@ function App() {
         newConnection.on("MatchEnded", (lobbyId) => {
             if (lobbyId == lobbyId) {
                 setLobbyState(LobbyState.Waiting);
-                setQuestion(null);
+                setQuestion(null); // Clear question when match ends
                 console.log("Match ended! Returning to lobby");
             }
         });
@@ -110,25 +111,12 @@ function App() {
                 isHost={isHost}
             />
         );
-    } else if (lobbyState === LobbyState.Started && question != null) {
-        // view = <div>Game Started! (Placeholder for future GameView)</div>;
+    } else if (lobbyState === LobbyState.Started) {
         view = (
             <LobbyStartedView
                 connection={connection}
                 lobbyId={lobbyId}
                 question={question}
-            />
-        );
-    } else {
-        view = (
-            <LobbyWaitingView
-                connection={connection}
-                lobbyId={lobbyId}
-                lobbyState={lobbyState}
-                playerName={playerName}
-                players={players}
-                isHost={isHost}
-                onStartMatch={() => startMatch(lobbyId)}
             />
         );
     }

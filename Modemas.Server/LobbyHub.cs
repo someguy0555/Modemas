@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using System.Collections.Concurrent;
+using System.IO;
 
 namespace Modemas.Server
 {
@@ -86,7 +87,7 @@ namespace Modemas.Server
         /// </summary>
         /// <param name="lobbyId">The ID of the lobby to join.</param>
         /// <returns>A task representing the async operation.</returns>
-        public async Task StartMatch(String lobbyId)
+        public async Task StartMatch(string lobbyId, string topic)
         {
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
             {
@@ -106,12 +107,23 @@ namespace Modemas.Server
                 return;
             }
 
-            var json = System.IO.File.ReadAllText("questions.json");
+            // Use only the filename, since working directory is already Modemas.Server
+            var topicFile = $"{topic}.json";
+            var fullPath = Path.GetFullPath(topicFile);
+            Console.WriteLine($"Looking for topic file at: {fullPath}");
+
+            if (!File.Exists(topicFile))
+            {
+                await Clients.Caller.SendAsync("Error", $"Topic '{topic}' not found at {fullPath}.");
+                return;
+            }
+
+            var json = File.ReadAllText(topicFile);
             var questions = System.Text.Json.JsonSerializer.Deserialize<List<Question>>(json);
 
             if (questions == null)
             {
-                await Clients.Caller.SendAsync("Error", "There are no questions available.");
+                await Clients.Caller.SendAsync("Error", "There are no questions available for this topic.");
                 return;
             }
 
@@ -119,7 +131,7 @@ namespace Modemas.Server
             lobby.CurrentQuestionIndex = 0;
             lobby.State = LobbyState.Started;
 
-            await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State);
+            await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State, topic);
             await RunMatch(lobby);
 
             // We run this in the background as to not block things.
@@ -191,6 +203,13 @@ namespace Modemas.Server
                 return;
             }
 
+            // Ensure index is valid
+            if (lobby.CurrentQuestionIndex >= lobby.Questions.Count)
+            {
+                await Clients.Caller.SendAsync("Error", "No current question to answer.");
+                return;
+            }
+
             var currentQuestion = lobby.Questions[lobby.CurrentQuestionIndex];
             if (answerIndex < 0 || answerIndex >= currentQuestion.Choices.Count)
             {
@@ -198,8 +217,12 @@ namespace Modemas.Server
                 return;
             }
 
-            // This function doesn't actually do anything currently :)
-            // ...
+            // Send feedback to the client who answered
+            await Clients.Caller.SendAsync("AnswerReceived", lobby.CurrentQuestionIndex, answerIndex);
+
+            // Optionally broadcast to all clients in the lobby for demo purposes
+            await Clients.Group(lobbyId).SendAsync("PlayerAnswered", player.Name, lobby.CurrentQuestionIndex, answerIndex);
+
             Console.WriteLine($"Player '{player.Name}' answered question {lobby.CurrentQuestionIndex} with option {answerIndex}.");
         }
 
