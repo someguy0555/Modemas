@@ -269,5 +269,26 @@ namespace Modemas.Server
 
             await base.OnDisconnectedAsync(exception);
         }
+
+        /// <summary>
+        /// Allows the host to update lobby customization settings.
+        /// </summary>
+        public async Task UpdateLobbySettings(string lobbyId, int numberOfQuestions, string theme, int questionTimer)
+        {
+            if (!Lobbies.TryGetValue(lobbyId, out var lobby))
+            {
+                await Clients.Caller.SendAsync("Error", "Lobby not found.");
+                return;
+            }
+            if (lobby.HostConnectionId != Context.ConnectionId)
+            {
+                await Clients.Caller.SendAsync("Error", "Only the host can update settings.");
+                return;
+            }
+            lobby.NumberOfQuestions = numberOfQuestions;
+            lobby.Theme = theme;
+            lobby.QuestionTimer = questionTimer;
+            await Clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", numberOfQuestions, theme, questionTimer);
+        }
     }
 }

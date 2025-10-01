@@ -1,51 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 /**
  * View for waiting in a lobby before the match starts.
  */
-const topics = [
-    'Math',
-    'Science',
-    'History',
-    'Geography'
-    // ...add more topics as needed...
-];
-
 export default function LobbyWaitingView({ connection, lobbyId, lobbyState, playerName, players, isHost }) {
-    const [selectedTopic, setSelectedTopic] = useState('');
-    const [starting, setStarting] = useState(false);
-    const [error, setError] = useState('');
-    const [matchStarted, setMatchStarted] = useState(false);
-
-    useEffect(() => {
-        if (!connection) return;
-        const handleMatchStarted = (state, topic) => {
-            setMatchStarted(true);
-            setStarting(false);
-            setError('');
-        };
-        const handleError = (msg) => {
-            setError(msg);
-            setStarting(false);
-        };
-        connection.on("LobbyMatchStarted", handleMatchStarted);
-        connection.on("Error", handleError);
-        return () => {
-            connection.off("LobbyMatchStarted", handleMatchStarted);
-            connection.off("Error", handleError);
-        };
-    }, [connection]);
+    const [numberOfQuestions, setNumberOfQuestions] = useState(10);
+    const [theme, setTheme] = useState("");
+    const [questionTimer, setQuestionTimer] = useState(10);
 
     const startMatch = async (lobbyId) => {
-        setStarting(true);
-        setError('');
-        try {
-            await connection.invoke("StartMatch", lobbyId, selectedTopic);
-        } catch (e) {
-            setError("Failed to start match.");
-            setStarting(false);
+        if (connection) {
+            await connection.invoke("StartMatch", lobbyId);
         }
     };
+
+    const updateSettings = async () => {
+        if (connection) {
+            await connection.invoke("UpdateLobbySettings", lobbyId, numberOfQuestions, theme, questionTimer);
+        }
+    };
+
+    useEffect(() => {
+        if (isHost && connection) {
+            connection.on("LobbySettingsUpdated", (num, th, timer) => {
+                setNumberOfQuestions(num);
+                setTheme(th);
+                setQuestionTimer(timer);
+            });
+        }
+    }, [connection, isHost]);
 
     return (
         <div>
@@ -60,26 +43,34 @@ export default function LobbyWaitingView({ connection, lobbyId, lobbyState, play
                 ))}
             </ul>
 
-            {isHost && !matchStarted && (
+            {isHost && (
                 <div>
-                    <h3>Select topic:</h3>
-                    <select
-                        value={selectedTopic}
-                        onChange={e => setSelectedTopic(e.target.value)}
-                        disabled={starting}
-                    >
-                        <option value="" disabled>Select topic</option>
-                        {topics.map(topic => (
-                            <option key={topic} value={topic}>{topic}</option>
-                        ))}
-                    </select>
-                    <button
-                        onClick={() => startMatch(lobbyId)}
-                        disabled={!selectedTopic || starting}
-                    >
-                        {starting ? "Starting..." : "Start Match"}
-                    </button>
-                    {error && <p style={{ color: 'red' }}>{error}</p>}
+                    <h3>Lobby Customization</h3>
+                    <input 
+                        type="text" 
+                        placeholder="Theme"
+                        value={theme} 
+                        onChange={e => setTheme(e.target.value)}
+                    />
+                    <br />
+                    Number of Questions:
+                    <input 
+                        type="number" 
+                        min={1} 
+                        value={numberOfQuestions} 
+                        onChange={e => setNumberOfQuestions(Number(e.target.value))}
+                    />
+                    <br />
+                    Timer per Question (seconds):
+                    <input 
+                        type="number" 
+                        min={1} 
+                        value={questionTimer} 
+                        onChange={e => setQuestionTimer(Number(e.target.value))}
+                    />
+                    <br />
+                    <button onClick={updateSettings}>Save Settings</button>
+                    <button onClick={() => startMatch(lobbyId)}>Start Match</button>
                 </div>
             )}
         </div>
