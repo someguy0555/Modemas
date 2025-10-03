@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 /**
  * View for creating a new lobby or joining an existing one.
  */
-export default function MainMenu({ connection }) {
+export default function MainMenuView({ connection, setGlobalPlayerName, setGlobalLobbyId }) {
     // ***********************************************
     // Local state
     // ***********************************************
@@ -13,9 +13,9 @@ export default function MainMenu({ connection }) {
     // ***********************************************
     // Functions that will be called from the backend by SignalR
     // ***********************************************
-    const createLobby = async () => {
-        if (connection) {
-            await connection.invoke("CreateLobby");
+    const createLobby = async (hostName) => {
+        if (connection && hostName) {
+            await connection.invoke("CreateLobby", hostName);
         }
     };
 
@@ -27,7 +27,13 @@ export default function MainMenu({ connection }) {
 
     return (
         <div>
-            <button onClick={() => createLobby()}>Create Lobby</button>
+            <button onClick={
+                () => {
+                    setGlobalPlayerName(playerName);
+                    console.log(`${playerName}.`);
+                    createLobby(playerName)
+                }
+            }>Create Lobby</button>
             <input
                 type="text"
                 placeholder="Enter your name"
@@ -40,7 +46,14 @@ export default function MainMenu({ connection }) {
                 value={lobbyId}
                 onChange={(e) => setLobbyId(e.target.value)}
             />
-            <button onClick={() => joinLobby(lobbyId, playerName)}>Join Lobby</button>
+            <button onClick={
+                () => {
+                    setGlobalPlayerName(playerName);
+                    setGlobalLobbyId(lobbyId);
+                    console.log(`${playerName} and ${lobbyId}.`);
+                    joinLobby(lobbyId, playerName)
+                }
+            }>Join Lobby</button>
         </div>
     );
 }

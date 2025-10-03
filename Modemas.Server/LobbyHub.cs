@@ -22,18 +22,22 @@ namespace Modemas.Server
         /// Creates a new lobby. Adds the connection calling this method as a host.
         /// </summary>
         /// <returns>A task representing the async operation.</returns>
-        public async Task CreateLobby()
+        public async Task CreateLobby(string hostName)
         {
+            Console.WriteLine($"Invoking CreateLobby.");
             var lobbyId = Guid.NewGuid().ToString("N").Substring(0, 8); // short code
             var lobby = new Lobby
             {
                 LobbyId = lobbyId,
-                HostConnectionId = Context.ConnectionId
+                HostConnectionId = Context.ConnectionId,
             };
             Lobbies[lobbyId] = lobby;
 
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
-            await Clients.Caller.SendAsync("LobbyCreated", lobbyId, LobbyState.Waiting);
+            await Clients.Caller.SendAsync("LobbyCreated", lobbyId);
+            Console.WriteLine($"Lobby {lobbyId} has been created.");
+
+            await JoinLobby(lobbyId, hostName);
         }
 
         /// <summary>
@@ -44,17 +48,19 @@ namespace Modemas.Server
         /// <returns>A task representing the async operation.</returns>
         public async Task JoinLobby(string lobbyId, string playerName)
         {
+            Console.WriteLine($"Invoking JoinLobby {lobbyId}.");
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
             {
                 await Clients.Caller.SendAsync("Error", "Lobby not found");
                 return;
             }
 
-            if (lobby.HostConnectionId == Context.ConnectionId)
-            {
-                await Clients.Caller.SendAsync("Error", "Hosts can't join their own lobby.");
-                return;
-            }
+            // This is probably not going to be needed now.
+            // if (lobby.HostConnectionId == Context.ConnectionId)
+            // {
+            //     await Clients.Caller.SendAsync("Error", "Hosts can't join their own lobby.");
+            //     return;
+            // }
 
             if (lobby.Players.Any(p => p.ConnectionId == Context.ConnectionId))
             {
@@ -79,6 +85,22 @@ namespace Modemas.Server
             await Groups.AddToGroupAsync(Context.ConnectionId, lobbyId);
             await Clients.Group(lobbyId).SendAsync("LobbyAddPlayer", playerName);
             await Clients.Caller.SendAsync("LobbyJoined", lobbyId, playerName, lobby.Players.Select(p => p.Name), lobby.State);
+
+            Console.WriteLine($"Player {playerName} has joined lobby {lobbyId}.");
+        }
+
+
+        public async Task StartVoting(string lobbyId)
+        {
+            const int duration = 10; // Could probably be made a setting?
+
+            await Clients.Group(lobbyId).SendAsync("VotingStarted", lobbyId, duration);
+            Console.WriteLine($"Voting period started for {duration} seconds in lobby {lobbyId}.");
+
+            await Task.Delay(duration * 1000);
+
+            Console.WriteLine($"Voting period has ended in lobby {lobbyId}.");
+            await Clients.Group(lobbyId).SendAsync("VotingEnded", lobbyId);
         }
 
         /// <summary>
@@ -86,7 +108,7 @@ namespace Modemas.Server
         /// </summary>
         /// <param name="lobbyId">The ID of the lobby to join.</param>
         /// <returns>A task representing the async operation.</returns>
-        public async Task StartMatch(String lobbyId)
+        public async Task StartMatch(string lobbyId)
         {
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
             {
@@ -115,15 +137,13 @@ namespace Modemas.Server
                 return;
             }
 
-            lobby.Questions = questions;
-            lobby.CurrentQuestionIndex = 0;
+            lobby.Match.Questions = questions;
+            lobby.Match.CurrentQuestionIndex = 0;
             lobby.State = LobbyState.Started;
 
-            await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobby.State);
-            await RunMatch(lobby);
-
-            // We run this in the background as to not block things.
-            // _ = Task.Run(async () => await RunMatch(lobby));
+            Console.WriteLine($"Match has been started in lobby {lobbyId}.");
+            await Clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobbyId);
+            await RunMatch(lobby); // There is something wrong with this method taht should probably be fixed later.
         }
 
         /// <summary>
@@ -138,27 +158,29 @@ namespace Modemas.Server
         {
             lobby.State = LobbyState.Started;
 
-            while (lobby.CurrentQuestionIndex < lobby.Questions.Count)
+            while (lobby.Match.CurrentQuestionIndex < lobby.Match.Questions.Count)
             {
-                var question = lobby.Questions[lobby.CurrentQuestionIndex];
+                var question = lobby.Match.Questions[lobby.Match.CurrentQuestionIndex];
                 await Clients.Group(lobby.LobbyId).SendAsync("NewQuestion", question);
                 await Clients.Group(lobby.LobbyId).SendAsync("NewQuestion", new
                 {
                     question.Text,
                     question.Choices,
-                    question.TimeLimit
+                    lobby.LobbySettings.QuestionTimerInSeconds,
                 });
                 Console.WriteLine($"New Question: {question.Text}, {question.Choices}, {question.TimeLimit}");
 
                 await Task.Delay(question.TimeLimit * 1000);
 
-                await Clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question {lobby.CurrentQuestionIndex}!");
+                await Clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question {lobby.Match.CurrentQuestionIndex}!");
 
-                lobby.CurrentQuestionIndex++;
+                lobby.Match.CurrentQuestionIndex++;
             }
 
             lobby.State = LobbyState.Waiting;
             await Clients.Group(lobby.LobbyId).SendAsync("MatchEnded", lobby.LobbyId);
+
+            Console.WriteLine($"Match in lobby {lobby.LobbyId} has been ended.");
         }
 
         /// <summary>
@@ -191,7 +213,7 @@ namespace Modemas.Server
                 return;
             }
 
-            var currentQuestion = lobby.Questions[lobby.CurrentQuestionIndex];
+            var currentQuestion = lobby.Match.Questions[lobby.Match.CurrentQuestionIndex];
             if (answerIndex < 0 || answerIndex >= currentQuestion.Choices.Count)
             {
                 await Clients.Caller.SendAsync("Error", "Invalid answer choice.");
@@ -200,7 +222,20 @@ namespace Modemas.Server
 
             // This function doesn't actually do anything currently :)
             // ...
-            Console.WriteLine($"Player '{player.Name}' answered question {lobby.CurrentQuestionIndex} with option {answerIndex}.");
+            Console.WriteLine($"Player '{player.Name}' answered question {lobby.Match.CurrentQuestionIndex} with option {answerIndex}.");
+        }
+
+        public async Task StartMatchEnd(string lobbyId)
+        {
+            const int duration = 10; // Could probably be made a setting?
+
+            await Clients.Group(lobbyId).SendAsync("MatchEndStarted", lobbyId, duration);
+            Console.WriteLine($"Match end period started for {duration} seconds in lobby {lobbyId}.");
+
+            await Task.Delay(duration * 1000);
+
+            await Clients.Group(lobbyId).SendAsync("MatchEndEnded", lobbyId);
+            Console.WriteLine($"Match end period has ended in lobby {lobbyId}.");
         }
 
         /// <summary>
@@ -245,12 +280,13 @@ namespace Modemas.Server
             }
 
             await base.OnDisconnectedAsync(exception);
+            Console.WriteLine("A player has been disconnected.");
         }
 
         /// <summary>
         /// Allows the host to update lobby customization settings.
         /// </summary>
-        public async Task UpdateLobbySettings(string lobbyId, int numberOfQuestions, string theme, int questionTimer)
+        public async Task UpdateLobbySettings(string lobbyId, int numberOfQuestions, string theme, int questionTimerInSeconds)
         {
             if (!Lobbies.TryGetValue(lobbyId, out var lobby))
             {
@@ -262,10 +298,11 @@ namespace Modemas.Server
                 await Clients.Caller.SendAsync("Error", "Only the host can update settings.");
                 return;
             }
-            lobby.NumberOfQuestions = numberOfQuestions;
-            lobby.Theme = theme;
-            lobby.QuestionTimer = questionTimer;
-            await Clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", numberOfQuestions, theme, questionTimer);
+            lobby.LobbySettings.NumberOfQuestions = numberOfQuestions;
+            lobby.LobbySettings.QuestionTimerInSeconds = questionTimerInSeconds;
+            await Clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", numberOfQuestions, theme, questionTimerInSeconds);
+
+            Console.WriteLine($"Setting for lobby {lobbyId} have been updated.");
         }
     }
 }

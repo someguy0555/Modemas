@@ -16,7 +16,7 @@ export default function WaitingView({ connection, lobbyId, lobbyState, playerNam
     // ***********************************************
     const startMatch = async (lobbyId) => {
         if (connection) {
-            await connection.invoke("StartMatch", lobbyId);
+            await connection.invoke("StartVoting", lobbyId);
         }
     };
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 /**
  * View for choosing a topic.
  */
-export default function TopicChooser({ connection }) {
+export default function TopicChooserView({ connection }) {
     // ***********************************************
     // Local state
     // ***********************************************
