@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import * as signalR from "@microsoft/signalr";
-import LobbyJoinView from "./LobbyJoinView";
-import LobbyWaitingView from "./LobbyWaitingView";
-import LobbyStartedView from "./LobbyStartedView";
+import MainMenuView from "./views/MainMenuView.jsx";
+import WaitingView from "./views/WaitingView.jsx";
+import TopicChooserView from "./views/TopicChooserView.jsx";
+import MatchView from "./views/MatchView.jsx";
+import MatchEndView from "./views/MatchEndView.jsx";
 import "./App.css";
 
 
@@ -29,6 +31,9 @@ function App() {
             .withAutomaticReconnect()
             .build();
 
+        // ***********************************************
+        // Put events received from the backend here:
+        // ***********************************************
         newConnection.on("LobbyCreated", (lobbyId, lobbyState) => {
             setLobbyId(lobbyId);
             setLobbyState(lobbyState);
@@ -95,13 +100,13 @@ function App() {
     let view;
     if (!lobbyId) {
         view = (
-            <LobbyJoinView
+            <MainMenuView
                 connection={connection}
             />
         );
     } else if (lobbyState === LobbyState.Waiting) {
         view = (
-            <LobbyWaitingView
+            <WaitingView
                 connection={connection}
                 lobbyId={lobbyId}
                 lobbyState={lobbyState}
@@ -113,7 +118,7 @@ function App() {
     } else if (lobbyState === LobbyState.Started && question != null) {
         // view = <div>Game Started! (Placeholder for future GameView)</div>;
         view = (
-            <LobbyStartedView
+            <MatchView
                 connection={connection}
                 lobbyId={lobbyId}
                 question={question}
@@ -121,7 +126,7 @@ function App() {
         );
     } else {
         view = (
-            <LobbyWaitingView
+            <WaitingView
                 connection={connection}
                 lobbyId={lobbyId}
                 lobbyState={lobbyState}

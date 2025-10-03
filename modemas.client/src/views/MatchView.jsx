@@ -1,7 +1,16 @@
+import { useEffect, useState } from "react";
+
 /**
  * View for displaying the current question and choices during a match.
  */
-export default function LobbyStartedView({ connection, lobbyId, question }) {
+export default function MatchView({ connection, lobbyId, question }) {
+    // ***********************************************
+    // Local state
+    // ***********************************************
+
+    // ***********************************************
+    // Functions that will be called from the backend by SignalR
+    // ***********************************************
     const answerQuestion = async (anwserIndex) => {
         if (connection && anwserIndex != null) {
             await connection.invoke("AnswerQuestion", lobbyId, anwserIndex);

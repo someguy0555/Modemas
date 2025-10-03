@@ -3,10 +3,16 @@ import { useEffect, useState } from "react";
 /**
  * View for creating a new lobby or joining an existing one.
  */
-export default function LobbyJoinView({ connection }) {
+export default function MainMenu({ connection }) {
+    // ***********************************************
+    // Local state
+    // ***********************************************
     const [playerName, setPlayerName] = useState("");
     const [lobbyId, setLobbyId] = useState("");
 
+    // ***********************************************
+    // Functions that will be called from the backend by SignalR
+    // ***********************************************
     const createLobby = async () => {
         if (connection) {
             await connection.invoke("CreateLobby");
@@ -18,7 +24,6 @@ export default function LobbyJoinView({ connection }) {
             await connection.invoke("JoinLobby", lobbyId, playerName);
         }
     };
-
 
     return (
         <div>
