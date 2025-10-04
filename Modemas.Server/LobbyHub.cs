@@ -37,7 +37,14 @@ namespace Modemas.Server
             await Clients.Caller.SendAsync("LobbyCreated", lobbyId);
             Console.WriteLine($"Lobby {lobbyId} has been created.");
 
-            await JoinLobby(lobbyId, hostName);
+            try
+            {
+                await JoinLobby(lobbyId, hostName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error joining lobby immediately after creation: {ex}");
+            }
         }
 
         /// <summary>
@@ -101,6 +108,7 @@ namespace Modemas.Server
 
             Console.WriteLine($"Voting period has ended in lobby {lobbyId}.");
             await Clients.Group(lobbyId).SendAsync("VotingEnded", lobbyId);
+            await StartMatch(lobbyId);
         }
 
         /// <summary>
@@ -178,9 +186,10 @@ namespace Modemas.Server
             }
 
             lobby.State = LobbyState.Waiting;
-            await Clients.Group(lobby.LobbyId).SendAsync("MatchEnded", lobby.LobbyId);
+            await Clients.Group(lobby.LobbyId).SendAsync("MatchEndStarted", lobby.LobbyId);
 
             Console.WriteLine($"Match in lobby {lobby.LobbyId} has been ended.");
+            await StartMatchEnd(lobby.LobbyId);
         }
 
         /// <summary>
