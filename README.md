@@ -4,10 +4,10 @@ Kaput is a web application made by team Modemas, using ASP.NET (C# NET 8.0) Core
 
 ## Team members
 * Arnas Vyšniauskas [Arvys7](https://github.com/Arvys7)
-* Audrius Duoblys
-* Greta Mazuraitytė
+* Audrius Duoblys [daudrius](https://github.com/daudrius)
+* Greta Mazuraitytė [Gretam16](https://github.com/Gretam16)
 * Jonas Grubliauskas [someguy0555](https://github.com/someguy0555)
-* Klaidas Blandis
+* Klaidas Blandis [KlaidasBlandis](https://github.com/KlaidasBlandis)
 
 ## List of functionalities
 * **Alpha**:

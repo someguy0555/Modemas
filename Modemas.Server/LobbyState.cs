@@ -2,8 +2,10 @@ namespace Modemas.Server
 {
     public enum LobbyState
     {
-        Waiting = 0,
-        Started = 1,
-        Closed = 2
+        Idle = 0,
+        Waiting = 1,
+        Voting = 2,
+        Started = 3,
+        Closed = 4
     }
 }

@@ -3,14 +3,20 @@ import { useEffect, useState } from "react";
 /**
  * View for waiting in a lobby before the match starts.
  */
-export default function LobbyWaitingView({ connection, lobbyId, lobbyState, playerName, players, isHost }) {
+export default function WaitingView({ connection, lobbyId, lobbyState, playerName, players, isHost }) {
+    // ***********************************************
+    // Local state
+    // ***********************************************
     const [numberOfQuestions, setNumberOfQuestions] = useState(10);
     const [theme, setTheme] = useState("");
     const [questionTimer, setQuestionTimer] = useState(10);
 
+    // ***********************************************
+    // Functions that will be called from the backend by SignalR
+    // ***********************************************
     const startMatch = async (lobbyId) => {
         if (connection) {
-            await connection.invoke("StartMatch", lobbyId);
+            await connection.invoke("StartVoting", lobbyId);
         }
     };
 
