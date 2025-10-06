@@ -1,4 +1,5 @@
-using Modemas.Server;
+using Modemas.Server.Services;
+using Modemas.Server.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,9 @@ builder.Services.AddSwaggerGen();
 // "ASP.NET SignalR is a library for ASP.NET developers that simplifies the process of adding real-time web functionality to applications."
 // https://learn.microsoft.com/en-us/aspnet/signalr/overview/getting-started/introduction-to-signalr
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<LobbyStore>();
+builder.Services.AddSingleton<MatchService>();
+builder.Services.AddSingleton<LobbyService>();
 
 var app = builder.Build();
 
