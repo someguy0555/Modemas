@@ -61,34 +61,44 @@ public class MatchService
     /// </summary>
     private async Task RunMatchLoop(IHubCallerClients clients, Lobby lobby)
     {
+        Console.WriteLine($"[RunMatchLoop] Starting match for lobby {lobby.LobbyId}. Total questions: {lobby.Match.Questions.Count}");
+
         while (lobby.Match.CurrentQuestionIndex < lobby.Match.Questions.Count)
         {
             var question = lobby.Match.Questions[lobby.Match.CurrentQuestionIndex];
+            Console.WriteLine($"[RunMatchLoop] Preparing question {lobby.Match.CurrentQuestionIndex} ({question.Type}) for lobby {lobby.LobbyId}");
 
             // Reset HasAnsweredCurrent for all players
             foreach (var player in lobby.Players)
+            {
                 player.HasAnsweredCurrent = false;
+                Console.WriteLine($"[RunMatchLoop] Reset HasAnsweredCurrent for player {player.Name}");
+            }
 
-            int duration = lobby.LobbySettings.QuestionTimerInSeconds > 0
-                           ? lobby.LobbySettings.QuestionTimerInSeconds
-                           : question.TimeLimit;
+            // int duration = lobby.LobbySettings.QuestionTimerInSeconds > 0
+            //                ? lobby.LobbySettings.QuestionTimerInSeconds
+            //                : question.TimeLimit;
+            int duration = question.TimeLimit;
 
+            Console.WriteLine($"[RunMatchLoop] Sending question {lobby.Match.CurrentQuestionIndex} to lobby {lobby.LobbyId}: \"{question.Text}\" with timer {duration}s");
             await clients.Group(lobby.LobbyId).SendAsync("NewQuestion", question);
 
-            Console.WriteLine($"Question {lobby.Match.CurrentQuestionIndex} sent to lobby {lobby.LobbyId}: {question.Text}");
-
+            Console.WriteLine($"[RunMatchLoop] Waiting {duration}s for answers...");
             await Task.Delay(duration * 1000);
 
+            Console.WriteLine($"[RunMatchLoop] Timeout reached for question {lobby.Match.CurrentQuestionIndex} in lobby {lobby.LobbyId}");
             await clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question {lobby.Match.CurrentQuestionIndex}");
+
             lobby.Match.CurrentQuestionIndex++;
         }
 
+        Console.WriteLine($"[RunMatchLoop] Match complete for lobby {lobby.LobbyId}. Notifying clients...");
         lobby.State = LobbyState.Waiting;
 
         await clients.Group(lobby.LobbyId).SendAsync("MatchEndStarted", lobby.LobbyId);
         await Task.Delay(10000);
         await clients.Group(lobby.LobbyId).SendAsync("MatchEndEnded", lobby.LobbyId);
 
-        Console.WriteLine($"Match ended in lobby {lobby.LobbyId}");
+        Console.WriteLine($"[RunMatchLoop] Match ended in lobby {lobby.LobbyId}");
     }
 }

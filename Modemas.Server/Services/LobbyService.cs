@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using System.Text.Json;
 using Modemas.Server.Models;
 
 namespace Modemas.Server.Services;
@@ -88,6 +89,7 @@ public class LobbyService
         var lobby = _store.Get(lobbyId);
         if (lobby == null)
         {
+            Console.WriteLine($"AnswerQuestion: Lobby {lobbyId} not found for connection {context.ConnectionId}");
             await clients.Caller.SendAsync("Error", "Lobby not found");
             return;
         }
@@ -95,6 +97,7 @@ public class LobbyService
         var player = lobby.Players.FirstOrDefault(p => p.ConnectionId == context.ConnectionId);
         if (player == null)
         {
+            Console.WriteLine($"AnswerQuestion: Player not found in lobby {lobbyId} (Connection {context.ConnectionId})");
             await clients.Caller.SendAsync("Error", "You are not in this lobby");
             return;
         }
@@ -102,28 +105,60 @@ public class LobbyService
         var question = lobby.Match.Questions.ElementAtOrDefault(lobby.Match.CurrentQuestionIndex);
         if (question == null)
         {
+            Console.WriteLine($"AnswerQuestion: No active question in lobby {lobbyId}");
             await clients.Caller.SendAsync("Error", "No active question");
             return;
         }
 
         if (player.HasAnsweredCurrent)
         {
+            Console.WriteLine($"AnswerQuestion: Player {player.Name} already answered question {lobby.Match.CurrentQuestionIndex} in lobby {lobbyId}");
             await clients.Caller.SendAsync("Error", "You already answered this question");
             return;
         }
 
         try
         {
+            if (answer is JsonElement json)
+            {
+                switch (question.Type)
+                {
+                    case QuestionType.MultipleChoice:
+                        if (json.ValueKind == JsonValueKind.Number && json.TryGetInt32(out var intVal))
+                            answer = intVal;
+                        break;
+
+                    case QuestionType.MultipleAnswer:
+                        if (json.ValueKind == JsonValueKind.Array)
+                            answer = json.EnumerateArray()
+                                         .Where(e => e.ValueKind == JsonValueKind.Number)
+                                         .Select(e => e.GetInt32())
+                                         .ToList();
+                        break;
+
+                    case QuestionType.TrueFalse:
+                        if (json.ValueKind == JsonValueKind.True || json.ValueKind == JsonValueKind.False)
+                            answer = json.GetBoolean();
+                        break;
+                }
+            }
+
             int points = question.IsCorrect(answer);
             player.QuestionScores[lobby.Match.CurrentQuestionIndex] = points;
             player.HasAnsweredCurrent = true;
 
             await clients.Caller.SendAsync("AnswerAccepted", points);
-            Console.WriteLine($"Player {player.Name} answered question {lobby.Match.CurrentQuestionIndex} with {points} points.");
+            Console.WriteLine($"Player {player.Name} answered question {lobby.Match.CurrentQuestionIndex} in lobby {lobbyId} earning {points} points.");
         }
         catch (ArgumentException ex)
         {
+            Console.WriteLine($"AnswerQuestion: Invalid answer from player {player.Name} in lobby {lobbyId}. Exception: {ex.Message}");
             await clients.Caller.SendAsync("Error", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"AnswerQuestion: Unexpected error for player {player.Name} in lobby {lobbyId}. Exception: {ex.Message}");
+            await clients.Caller.SendAsync("Error", "An unexpected error occurred while processing your answer.");
         }
     }
 

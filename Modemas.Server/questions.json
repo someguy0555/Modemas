@@ -2,7 +2,7 @@
   {
     "text": "What is the capital of France?",
     "timeLimit": 15,
-    "points": 1,
+    "points": 100,
     "type": "MultipleChoice",
     "choices": ["Paris", "London", "Berlin", "Rome"],
     "correctAnswerIndex": 0
@@ -10,7 +10,7 @@
   {
     "text": "Select all prime numbers",
     "timeLimit": 20,
-    "points": 2,
+    "points": 100,
     "type": "MultipleAnswer",
     "choices": ["2", "3", "4", "5"],
     "correctAnswerIndices": [0,1,3]
@@ -18,7 +18,7 @@
   {
     "text": "The Earth is flat",
     "timeLimit": 10,
-    "points": 1,
+    "points": 100,
     "type": "TrueFalse",
     "correctAnswer": false
   }

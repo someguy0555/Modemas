@@ -15,7 +15,10 @@ function App() {
     const [players, setPlayers] = useState([]);
     const [lobbyState, setLobbyState] = useState("Idle");
     const [isHost, setIsHost] = useState(false);
+
+    // MatchView
     const [question, setQuestion] = useState(null);
+    const [answered, setAnswered] = useState(false);
 
     // Helper to connect to SignalR hub
     const connectToHub = async () => {
@@ -78,7 +81,7 @@ function App() {
         });
         newConnection.on("NewQuestion", (question) => {
             setQuestion(question);
-            setTimeLeft(question.timeLimit);
+            setAnswered(false);
             console.log(`Next question in lobby ${lobbyId}.`);
         });
         newConnection.on("QuestionTimeout", (QuestionTimeoutMessage) => {
@@ -151,6 +154,8 @@ function App() {
                     connection={connection}
                     lobbyId={lobbyId}
                     question={question}
+                    answered={answered}
+                    setAnswered={setAnswered}
                 />
             );
             break;

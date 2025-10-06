@@ -56,7 +56,7 @@ public class MultipleAnswerQuestion : Question
     public List<string> Choices { get; set; } = new();
 
     [JsonPropertyName("correctAnswers")]
-    public HashSet<int> CorrectAnswerIndices { get; set; } = new();
+    public List<int> CorrectAnswerIndices { get; set; } = new();
 
     public MultipleAnswerQuestion() => Type = QuestionType.MultipleAnswer;
 
@@ -65,7 +65,10 @@ public class MultipleAnswerQuestion : Question
         if (answer is not IEnumerable<int> indices)
             throw new ArgumentException("Answer must be a collection of indices for MultipleAnswerQuestion.");
 
-        return CorrectAnswerIndices.Intersect(indices).Count();
+        var playerAnswers = indices.Distinct().ToList();
+        int correctSelections = playerAnswers.Intersect(CorrectAnswerIndices).Count();
+
+        return correctSelections / Choices.Count;
     }
 }
 

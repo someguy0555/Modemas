@@ -3,9 +3,7 @@ import { useState } from "react";
 /**
  * View for displaying the current question and choices during a match.
  */
-export default function MatchView({ connection, lobbyId, question }) {
-    const [answered, setAnswered] = useState(false);
-
+export default function MatchView({ connection, lobbyId, question, answered, setAnswered }) {
     const answerQuestion = async (answer) => {
         if (connection && !answered) {
             try {
