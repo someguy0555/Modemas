@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Modemas.Server
+namespace Modemas.Server.Models
 {
     /// <summary>
     /// This is a class for storing questions.

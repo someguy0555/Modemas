@@ -1,4 +1,4 @@
-namespace Modemas.Server
+namespace Modemas.Server.Models
 {
     public enum LobbyState
     {

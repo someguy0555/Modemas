@@ -1,4 +1,4 @@
-namespace Modemas.Server
+namespace Modemas.Server.Models
 {
     /// <summary>
     /// Class is responsible for storing lobby data locally on the backend.
