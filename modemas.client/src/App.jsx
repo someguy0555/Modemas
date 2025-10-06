@@ -7,22 +7,13 @@ import MatchView from "./views/MatchView.jsx";
 import MatchEndView from "./views/MatchEndView.jsx";
 import "./App.css";
 
-
-const LobbyState = {
-    Idle: 0,
-    Waiting: 1,
-    Voting: 2,
-    Started: 3,
-    Closed: 4,
-}
-
 function App() {
     // Program elements
     const [connection, setConnection] = useState(null);
     const [lobbyId, setLobbyId] = useState(null);
     const [playerName, setPlayerName] = useState(null);
     const [players, setPlayers] = useState([]);
-    const [lobbyState, setLobbyState] = useState(LobbyState.Idle);
+    const [lobbyState, setLobbyState] = useState("Idle");
     const [isHost, setIsHost] = useState(false);
     const [question, setQuestion] = useState(null);
 
@@ -38,7 +29,7 @@ function App() {
         // ***********************************************
         newConnection.on("LobbyCreated", (localLobbyId) => {
             setLobbyId(localLobbyId);
-            setLobbyState(LobbyState.Waiting);
+            setLobbyState("Waiting");
             setIsHost(true);
             console.log(`Lobby ${localLobbyId} (${lobbyId}) (${lobbyState}) was created.`)
         });
@@ -58,20 +49,20 @@ function App() {
         });
         newConnection.on("VotingStarted", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState(LobbyState.Voting);
+                setLobbyState("Voting");
                 console.log(`Voting started in lobby ${lobbyId}.`);
             // } else console.log(`VotingStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("VotingEnded", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState(LobbyState.Started);
+                setLobbyState("Started");
                 // connection.invoke("StartMatch", localLobbyId);
                 console.log(`Match started in lobby ${localLobbyId}.`);
             // } else console.log(`VotingEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("LobbyMatchStarted", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState(LobbyState.Started);
+                setLobbyState("Started");
                 console.log(`Match started in lobby ${lobbyId}.`);
             // } else console.log(`LobbyMatchStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
@@ -81,7 +72,7 @@ function App() {
             setLobbyId(null);
             setPlayerName(null);
             setPlayers([]);
-            setLobbyState(null);
+            setLobbyState("Idle");
             setIsHost(false);
             await connectToHub();
         });
@@ -95,14 +86,14 @@ function App() {
         });
         newConnection.on("MatchEndStarted", (localLobbyId, duration) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState(LobbyState.Closed);
+                setLobbyState("Closed");
                 setQuestion(null);
                 console.log("Match ended in lobby ${lobbyId}!");
             // } else console.log(`MatchEndStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("MatchEndEnded", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState(LobbyState.Waiting);
+                setLobbyState("Waiting");
                 console.log("Returning to lobby ${lobbyId}.");
             // } else console.log(`MatchEndEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
@@ -126,7 +117,7 @@ function App() {
     // Picks which view to render
     let view;
     switch (lobbyState) {
-        case LobbyState.Idle:
+        case "Idle":
             view = (
                 <MainMenuView
                     connection={connection}
@@ -135,7 +126,7 @@ function App() {
                 />
             );
             break;
-        case LobbyState.Waiting:
+        case "Waiting":
             view = (
                 <WaitingView
                     connection={connection}
@@ -147,14 +138,14 @@ function App() {
                 />
             );
             break;
-        case LobbyState.Voting:
+        case "Voting":
             view = (
                 <TopicChooserView
                     connection={connection}
                 />
             );
             break;
-        case LobbyState.Started:
+        case "Started":
             view = (
                 <MatchView
                     connection={connection}
@@ -163,7 +154,7 @@ function App() {
                 />
             );
             break;
-        case LobbyState.Closed:
+        case "Closed":
             view = (
                 <MatchEndView
                     connection={connection}
