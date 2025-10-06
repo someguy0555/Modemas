@@ -1,8 +1,7 @@
-namespace Modemas.Server.Models
+namespace Modemas.Server.Models;
+
+public class LobbyMatch
 {
-    public class LobbyMatch
-    {
-        public List<Question> Questions = [];
-        public int CurrentQuestionIndex = 0;
-    }
+    public List<Question> Questions = [];
+    public int CurrentQuestionIndex = 0;
 }

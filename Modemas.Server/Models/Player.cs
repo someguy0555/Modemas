@@ -1,8 +1,7 @@
-namespace Modemas.Server.Models
+namespace Modemas.Server.Models;
+
+public class Player
 {
-    public class Player
-    {
-        public string Name = "";
-        public string ConnectionId = "";
-    }
+    public string Name = "";
+    public string ConnectionId = "";
 }

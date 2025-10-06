@@ -1,8 +1,7 @@
-namespace Modemas.Server.Models
+namespace Modemas.Server.Models;
+
+public class LobbySettings
 {
-    public class LobbySettings
-    {
-        public int NumberOfQuestions = 10;
-        public int QuestionTimerInSeconds = 10;
-    }
+    public int NumberOfQuestions = 10;
+    public int QuestionTimerInSeconds = 10;
 }
