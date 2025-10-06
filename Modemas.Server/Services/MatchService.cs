@@ -27,7 +27,8 @@ public class MatchService
         if (lobby.State == LobbyState.Started)
             return;
 
-        var json = File.ReadAllText("questions.json");
+        var json = "questions.json".ReadAllFileText();
+
         var questions = System.Text.Json.JsonSerializer.Deserialize<List<Question>>(json) ?? new();
         lobby.Match.Questions = questions;
         lobby.Match.CurrentQuestionIndex = 0;
