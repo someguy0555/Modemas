@@ -4,6 +4,10 @@ using System.Collections.Concurrent;
 
 namespace Modemas.Server.Services;
 
+/// <summary>
+/// Singleton service holding all active lobbies in memory.
+/// Provides thread-safe access to lobby data.
+/// </summary>
 public class LobbyStore
 {
     private readonly ConcurrentDictionary<string, Lobby> _lobbies = new();

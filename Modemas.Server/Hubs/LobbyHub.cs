@@ -3,6 +3,10 @@ using Modemas.Server.Services;
 
 namespace Modemas.Server.Hubs;
 
+/// <summary>
+/// SignalR Hub for managing lobbies and matches.
+/// Receives requests from clients and delegates logic to LobbyService/MatchService.
+/// </summary>
 public class LobbyHub : Hub
 {
     private readonly LobbyService _lobbyService;

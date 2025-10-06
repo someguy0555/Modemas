@@ -3,6 +3,12 @@ using Modemas.Server.Models;
 
 namespace Modemas.Server.Services;
 
+/// <summary>
+/// Contains core business logic for managing lobbies.
+/// - Create / Join / Leave lobby
+/// - Start voting and tally votes
+/// - Track players and lobby state
+/// </summary>
 public class LobbyService
 {
     private readonly LobbyStore _store;
@@ -14,6 +20,9 @@ public class LobbyService
         _matchService = matchService;
     }
 
+    /// <summary>
+    /// Creates a new lobby and adds the host.
+    /// </summary>
     public async Task CreateLobby(HubCallerContext context, IHubCallerClients clients, IGroupManager groups, string hostName)
     {
         var lobbyId = Guid.NewGuid().ToString("N")[..8];
@@ -31,6 +40,9 @@ public class LobbyService
         Console.WriteLine($"Lobby {lobbyId} created by {hostName}");
     }
 
+    /// <summary>
+    /// Adds a player to an existing lobby.
+    /// </summary>
     public async Task JoinLobby(HubCallerContext context, IHubCallerClients clients, IGroupManager groups, string lobbyId, string playerName)
     {
         var lobby = _store.Get(lobbyId);
