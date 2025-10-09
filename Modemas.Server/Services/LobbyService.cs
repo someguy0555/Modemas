@@ -147,8 +147,9 @@ public class LobbyService
             player.QuestionScores[lobby.Match.CurrentQuestionIndex] = points;
             player.HasAnsweredCurrent = true;
 
-            await clients.Caller.SendAsync("AnswerAccepted", points);
-            Console.WriteLine($"Player {player.Name} answered question {lobby.Match.CurrentQuestionIndex} in lobby {lobbyId} earning {points} points.");
+            bool isCorrect = points > 0;
+            await clients.Caller.SendAsync("AnswerAccepted", points, isCorrect);
+            Console.WriteLine($"Player {player.Name} answered question {lobby.Match.CurrentQuestionIndex} in lobby {lobbyId} earning {points} points. Correct: {isCorrect}");
         }
         catch (ArgumentException ex)
         {
