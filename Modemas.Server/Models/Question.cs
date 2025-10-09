@@ -55,7 +55,7 @@ public class MultipleAnswerQuestion : Question
     [JsonPropertyName("choices")]
     public List<string> Choices { get; set; } = new();
 
-    [JsonPropertyName("correctAnswers")]
+    [JsonPropertyName("correctAnswerIndices")]
     public List<int> CorrectAnswerIndices { get; set; } = new();
 
     public MultipleAnswerQuestion() => Type = QuestionType.MultipleAnswer;
@@ -68,7 +68,8 @@ public class MultipleAnswerQuestion : Question
         var playerAnswers = indices.Distinct().ToList();
         int correctSelections = playerAnswers.Intersect(CorrectAnswerIndices).Count();
 
-        return correctSelections / Choices.Count;
+        if (CorrectAnswerIndices.Count == 0) return 0;
+        return (correctSelections * Points) / CorrectAnswerIndices.Count;
     }
 }
 
