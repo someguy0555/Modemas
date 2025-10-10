@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
 import * as signalR from "@microsoft/signalr";
-import LobbyJoinView from "./LobbyJoinView";
-import LobbyWaitingView from "./LobbyWaitingView";
-import LobbyStartedView from "./LobbyStartedView";
+import MainMenuView from "./views/MainMenuView.jsx";
+import WaitingView from "./views/WaitingView.jsx";
+import TopicChooserView from "./views/TopicChooserView.jsx";
+import MatchView from "./views/MatchView.jsx";
+import MatchEndView from "./views/MatchEndView.jsx";
 import "./App.css";
-
-
-const LobbyState = {
-    Waiting: 0,
-    Started: 1,
-    Closed: 2,
-}
 
 function App() {
     // Program elements
@@ -18,9 +13,12 @@ function App() {
     const [lobbyId, setLobbyId] = useState(null);
     const [playerName, setPlayerName] = useState(null);
     const [players, setPlayers] = useState([]);
-    const [lobbyState, setLobbyState] = useState(null);
+    const [lobbyState, setLobbyState] = useState("Idle");
     const [isHost, setIsHost] = useState(false);
+
+    // MatchView
     const [question, setQuestion] = useState(null);
+    const [answered, setAnswered] = useState(false);
 
     // Helper to connect to SignalR hub
     const connectToHub = async () => {
@@ -29,60 +27,87 @@ function App() {
             .withAutomaticReconnect()
             .build();
 
-        newConnection.on("LobbyCreated", (lobbyId, lobbyState) => {
-            setLobbyId(lobbyId);
-            setLobbyState(lobbyState);
+        // ***********************************************
+        // Put events received from the backend here:
+        // ***********************************************
+        newConnection.on("LobbyCreated", (localLobbyId) => {
+            setLobbyId(localLobbyId);
+            setLobbyState("Waiting");
             setIsHost(true);
-            console.log(lobbyState)
+            console.log(`Lobby ${localLobbyId} (${lobbyId}) (${lobbyState}) was created.`)
         });
-        newConnection.on("LobbyJoined", (lobbyId, playerName, players, lobbyState) => {
-            setLobbyId(lobbyId);
-            setPlayerName(playerName);
-            setPlayers(players);
-            setLobbyState(lobbyState);
-            setIsHost(false);
-            console.log(lobbyState)
+        newConnection.on("LobbyJoined", (localLobbyId, localPlayerName, localPlayers, localLobbyState) => {
+            setLobbyId(localLobbyId);
+            setPlayerName(localPlayerName);
+            setPlayers(localPlayers);
+            setLobbyState(localLobbyState);
+            console.log(`You joined lobby ${lobbyId}.`)
         });
         newConnection.on("LobbyAddPlayer", (playerName) => {
             setPlayers((prev) => {
                 if (prev.includes(playerName)) return prev;
                 return [...prev, playerName];
             });
+            console.log(`Added player ${playerName} to lobby ${lobbyId}.`);
         });
-        newConnection.on("LobbyMatchStarted", (lobbyState) => {
-            setLobbyState(lobbyState);
-            setQuestion(null); // Reset question when match starts
+        newConnection.on("VotingStarted", (localLobbyId) => {
+            // if (lobbyId == localLobbyId) {
+                setLobbyState("Voting");
+                console.log(`Voting started in lobby ${lobbyId}.`);
+            // } else console.log(`VotingStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
-        newConnection.on("Error", (errorMsg) => {
-            console.log(errorMsg);
+        newConnection.on("VotingEnded", (localLobbyId) => {
+            // if (lobbyId == localLobbyId) {
+                setLobbyState("Started");
+                // connection.invoke("StartMatch", localLobbyId);
+                console.log(`Match started in lobby ${localLobbyId}.`);
+            // } else console.log(`VotingEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
+        });
+        newConnection.on("LobbyMatchStarted", (localLobbyId) => {
+            // if (lobbyId == localLobbyId) {
+                setLobbyState("Started");
+                console.log(`Match started in lobby ${lobbyId}.`);
+            // } else console.log(`LobbyMatchStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("KickedFromLobby", async (message) => {
             await newConnection.stop();
-            alert("You were kicked out of the room: " + message);
+            console.log("You were kicked out of the room: " + message);
             setLobbyId(null);
             setPlayerName(null);
             setPlayers([]);
-            setLobbyState(null);
+            setLobbyState("Idle");
             setIsHost(false);
             await connectToHub();
         });
         newConnection.on("NewQuestion", (question) => {
             setQuestion(question);
-            setTimeLeft(question.timeLimit);
+            setAnswered(false);
+            console.log(`Next question in lobby ${lobbyId}.`);
         });
         newConnection.on("QuestionTimeout", (QuestionTimeoutMessage) => {
-            console.log(`${QuestionTimeoutMessage}`);
+            console.log(`Timeout in lobby ${lobbyId}: ${QuestionTimeoutMessage}`);
         });
-        newConnection.on("MatchEnded", (lobbyId) => {
-            if (lobbyId == lobbyId) {
-                setLobbyState(LobbyState.Waiting);
-                setQuestion(null); // Clear question when match ends
-                console.log("Match ended! Returning to lobby");
-            }
+        newConnection.on("MatchEndStarted", (localLobbyId, duration) => {
+            // if (lobbyId == localLobbyId) {
+                setLobbyState("Closed");
+                setQuestion(null);
+                console.log("Match ended in lobby ${lobbyId}!");
+            // } else console.log(`MatchEndStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
+        newConnection.on("MatchEndEnded", (localLobbyId) => {
+            // if (lobbyId == localLobbyId) {
+                setLobbyState("Waiting");
+                console.log("Returning to lobby ${lobbyId}.");
+            // } else console.log(`MatchEndEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
+        });
+        newConnection.on("Error", (errorMsg) => {
+            console.log(errorMsg);
+        });
+
         try {
             await newConnection.start();
             setConnection(newConnection);
+            console.log("Connection state:", newConnection.state);
         } catch (err) {
             console.error("Connection failed: ", err);
         }
@@ -94,32 +119,62 @@ function App() {
 
     // Picks which view to render
     let view;
-    if (!lobbyId) {
-        view = (
-            <LobbyJoinView
-                connection={connection}
-            />
-        );
-    } else if (lobbyState === LobbyState.Waiting) {
-        view = (
-            <LobbyWaitingView
-                connection={connection}
-                lobbyId={lobbyId}
-                lobbyState={lobbyState}
-                playerName={playerName}
-                players={players}
-                isHost={isHost}
-            />
-        );
-    } else if (lobbyState === LobbyState.Started) {
-        view = (
-            <LobbyStartedView
-                connection={connection}
-                lobbyId={lobbyId}
-                question={question}
-            />
-        );
+    switch (lobbyState) {
+        case "Idle":
+            view = (
+                <MainMenuView
+                    connection={connection}
+                    setGlobalPlayerName={setPlayerName}
+                    setGlobalLobbyId={setLobbyId}
+                />
+            );
+            break;
+        case "Waiting":
+            view = (
+                <WaitingView
+                    connection={connection}
+                    lobbyId={lobbyId}
+                    lobbyState={lobbyState}
+                    playerName={playerName}
+                    players={players}
+                    isHost={isHost}
+                />
+            );
+            break;
+        case "Voting":
+            view = (
+                <TopicChooserView
+                    connection={connection}
+                />
+            );
+            break;
+        case "Started":
+            view = (
+                <MatchView
+                    connection={connection}
+                    lobbyId={lobbyId}
+                    question={question}
+                    answered={answered}
+                    setAnswered={setAnswered}
+                />
+            );
+            break;
+        case "Closed":
+            view = (
+                <MatchEndView
+                    connection={connection}
+                />
+            );
+            break;
+        default:
+            view = (
+                <div>
+                    ErrorView
+                </div>
+            );
+            break;
     }
+
     return (
         <div className="App">
             {view}

@@ -49,8 +49,9 @@ export default defineConfig({
         proxy: {
             // We need to add this, otherwise we won't be able to connect, it'll throw a CORS error.
             '^/lobbyhub': {
-                target,
-                ws: true, // I believe this enables WebSocket support, which SignalR uses underhood.
+                target: 'https://localhost:7128',
+                ws: true,  // I believe this enables WebSocket support, which SignalR uses underhood.
+                changeOrigin: true, // sometimes required
                 secure: false
             }
         },
