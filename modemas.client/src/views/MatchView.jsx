@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 /**
  * View for displaying the current question and choices during a match.
@@ -53,6 +53,22 @@ export default function MatchView({ connection, lobbyId, question, answered, set
 
     const { type, text, choices } = question;
 
+    // Timer and question number display
+    const infoDisplay = (
+        <div style={{marginBottom: "1em"}}>
+            <strong>Question {questionNumber}</strong><br />
+            <strong>Time left: {timeLeft}</strong>
+        </div>
+    );
+
+    // Result notification
+    const resultDisplay = showResult ? (
+        <div style={{marginBottom: "1em", color: answerResult ? "green" : "red"}}>
+            {answerResult === true ? "Correct!" : "Incorrect!"}
+        </div>
+    ) : null;
+
+    // Determine question type
     switch (type) {
         case "MultipleChoice":
             return (

@@ -81,7 +81,7 @@ public class MatchService
             int duration = question.TimeLimit;
 
             Console.WriteLine($"[RunMatchLoop] Sending question {lobby.Match.CurrentQuestionIndex} to lobby {lobby.LobbyId}: \"{question.Text}\" with timer {duration}s");
-            await clients.Group(lobby.LobbyId).SendAsync("NewQuestion", question);
+            await clients.Group(lobby.LobbyId).SendAsync("NewQuestion", question, duration);
 
             Console.WriteLine($"[RunMatchLoop] Waiting {duration}s for answers...");
             await Task.Delay(duration * 1000);
