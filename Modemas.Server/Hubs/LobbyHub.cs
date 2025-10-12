@@ -10,10 +10,12 @@ namespace Modemas.Server.Hubs;
 public class LobbyHub : Hub
 {
     private readonly LobbyService _lobbyService;
+    private readonly MatchService _matchService;
 
-    public LobbyHub(LobbyService lobbyService)
+    public LobbyHub(LobbyService lobbyService, MatchService matchService)
     {
         _lobbyService = lobbyService;
+        _matchService = matchService;
     }
 
     public async Task CreateLobby(string hostName)
@@ -22,14 +24,14 @@ public class LobbyHub : Hub
     public async Task JoinLobby(string lobbyId, string playerName)
         => await _lobbyService.JoinLobby(Context, Clients, Groups, lobbyId, playerName);
 
+    public async Task UpdateLobbySettings(string lobbyId, int numberOfQuestions, string theme, int questionTimerInSeconds)
+        => await _lobbyService.UpdateLobbySettings(Context, Clients, lobbyId, numberOfQuestions, theme, questionTimerInSeconds);
+
     public async Task StartVoting(string lobbyId)
         => await _lobbyService.StartVoting(Clients, lobbyId);
 
     public async Task AnswerQuestion(string lobbyId, object answer)
-        => await _lobbyService.AnswerQuestion(Context, Clients, lobbyId, answer);
-
-    public async Task UpdateLobbySettings(string lobbyId, int numberOfQuestions, string theme, int questionTimerInSeconds)
-        => await _lobbyService.UpdateLobbySettings(Context, Clients, lobbyId, numberOfQuestions, theme, questionTimerInSeconds);
+        => await _matchService.AnswerQuestion(Context, Clients, lobbyId, answer);
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
