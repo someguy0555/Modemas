@@ -27,6 +27,21 @@ export default function MainMenuView({ connection, setGlobalPlayerName, setGloba
 
     return (
         <div>
+            <h2>Main Menu</h2>
+            <input
+                type="text"
+                placeholder="Enter your name"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+            />
+            <br />
+            <input
+                type="text"
+                placeholder="Enter Lobby ID"
+                value={lobbyId}
+                onChange={(e) => setLobbyId(e.target.value)}
+            />
+            <br />
             <button onClick={
                 () => {
                     setGlobalPlayerName(playerName);
@@ -34,18 +49,6 @@ export default function MainMenuView({ connection, setGlobalPlayerName, setGloba
                     createLobby(playerName)
                 }
             }>Create Lobby</button>
-            <input
-                type="text"
-                placeholder="Enter your name"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-            />
-            <input
-                type="text"
-                placeholder="Enter Lobby ID"
-                value={lobbyId}
-                onChange={(e) => setLobbyId(e.target.value)}
-            />
             <button onClick={
                 () => {
                     setGlobalPlayerName(playerName);
