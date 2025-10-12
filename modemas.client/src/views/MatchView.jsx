@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 /**
  * View for displaying the current question and choices during a match.
  */
-export default function MatchView({ connection, lobbyId, question, answered, setAnswered }) {
+export default function MatchView({ connection, lobbyId, question, answered, setAnswered, isCorrect, setIsCorrect }) {
     const [selectedIndices, setSelectedIndices] = useState([]);
     const [timeLeft, setTimeLeft] = useState(null);
 
@@ -34,7 +34,10 @@ export default function MatchView({ connection, lobbyId, question, answered, set
             });
         }, 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            setIsCorrect(null);
+        };
     }, [question]);
 
     // Handle selection toggling for multiple answer questions
@@ -53,18 +56,10 @@ export default function MatchView({ connection, lobbyId, question, answered, set
 
     const { type, text, choices } = question;
 
-    // Timer and question number display
-    const infoDisplay = (
-        <div style={{marginBottom: "1em"}}>
-            <strong>Question {questionNumber}</strong><br />
-            <strong>Time left: {timeLeft}</strong>
-        </div>
-    );
-
     // Result notification
-    const resultDisplay = showResult ? (
-        <div style={{marginBottom: "1em", color: answerResult ? "green" : "red"}}>
-            {answerResult === true ? "Correct!" : "Incorrect!"}
+    const resultDisplay = answered ? (
+        <div style={{marginBottom: "1em", color: isCorrect? "green" : "red"}}>
+            {isCorrect === true ? "Correct!" : "Incorrect!"}
         </div>
     ) : null;
 
@@ -73,6 +68,7 @@ export default function MatchView({ connection, lobbyId, question, answered, set
         case "MultipleChoice":
             return (
                 <div>
+                    {resultDisplay}
                     <p>Time left: {timeLeft ?? "..."}</p>
                     <h2>{text}</h2>
                     <ul>
@@ -89,6 +85,7 @@ export default function MatchView({ connection, lobbyId, question, answered, set
         case "MultipleAnswer":
             return (
                 <div>
+                    {resultDisplay}
                     <p>Time left: {timeLeft ?? "..."}</p>
                     <h2>{text}</h2>
                     <ul>
@@ -112,6 +109,7 @@ export default function MatchView({ connection, lobbyId, question, answered, set
         case "TrueFalse":
             return (
                 <div>
+                    {resultDisplay}
                     <p>Time left: {timeLeft ?? "..."}</p>
                     <h2>{text}</h2>
                     <button onClick={() => answerQuestion(true)} disabled={answered}>

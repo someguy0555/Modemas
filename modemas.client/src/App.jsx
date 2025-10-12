@@ -20,6 +20,7 @@ function App() {
     // MatchView
     const [question, setQuestion] = useState(null);
     const [answered, setAnswered] = useState(false);
+    const [isCorrect, setIsCorrect] = useState(null);
 
     // MatchEndView
     const [playerResults, setPlayerResults] = useState(null);
@@ -87,6 +88,9 @@ function App() {
             setQuestion(question);
             setAnswered(false);
             console.log(`Next question in lobby ${lobbyId}.`);
+        });
+        newConnection.on("AnswerAccepted", (localPoints, localIsCorrect) => {
+            setIsCorrect(localIsCorrect);
         });
         newConnection.on("QuestionTimeout", (QuestionTimeoutMessage) => {
             console.log(`Timeout in lobby ${lobbyId}: ${QuestionTimeoutMessage}`);
@@ -163,6 +167,8 @@ function App() {
                     question={question}
                     answered={answered}
                     setAnswered={setAnswered}
+                    isCorrect={isCorrect}
+                    setIsCorrect={setIsCorrect}
                 />
             );
             break;
