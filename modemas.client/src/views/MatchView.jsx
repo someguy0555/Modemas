@@ -4,44 +4,10 @@ import { useState, useEffect } from "react";
  * View for displaying the current question and choices during a match.
  */
 export default function MatchView({ connection, lobbyId, question, answered, setAnswered }) {
-    const [timeLeft, setTimeLeft] = useState(question?.timeLimit || 0);
-    const [questionNumber, setQuestionNumber] = useState(0);
-    const [answerResult, setAnswerResult] = useState(null);
-    const [showResult, setShowResult] = useState(false);
+    const [selectedIndices, setSelectedIndices] = useState([]);
+    const [timeLeft, setTimeLeft] = useState(null);
 
-    useEffect(() => {
-        if (!connection) return;
-
-        const handleNewQuestion = (newQuestion, timeLimit) => {
-            setTimeLeft(timeLimit || newQuestion?.timeLimit || 0);
-            setQuestionNumber(prev => prev + 1);
-            setAnswerResult(null);
-            setShowResult(false);
-        };
-        connection.on("NewQuestion", handleNewQuestion);
-        const handleAnswerAccepted = (points, isCorrect) => {
-            setAnswerResult(isCorrect);
-            setShowResult(true);
-            setTimeout(() => {
-                setShowResult(false);
-            }, 3000);
-        };
-        connection.on("AnswerAccepted", handleAnswerAccepted);
-        return () => {
-            connection.off("NewQuestion", handleNewQuestion);
-            connection.off("AnswerAccepted", handleAnswerAccepted);
-        };
-    }, [connection]);
-
-    useEffect(() => {
-        if (timeLeft > 0) {
-            const timer = setInterval(() => {
-                setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
-            }, 1000);
-            return () => clearInterval(timer);
-        }
-    }, [timeLeft]);
-
+    // Send answer to backend
     const answerQuestion = async (answer) => {
         if (connection && !answered) {
             try {
@@ -53,9 +19,39 @@ export default function MatchView({ connection, lobbyId, question, answered, set
         }
     };
 
+    // Handle countdown timer
+    useEffect(() => {
+        if (!question || question.timeLimit == null) return;
+
+        setTimeLeft(question.timeLimit);
+        const interval = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev === null || prev <= 1) {
+                    clearInterval(interval);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [question]);
+
+    // Handle selection toggling for multiple answer questions
+    const toggleSelection = (i) => {
+        setSelectedIndices((prev) =>
+            prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
+        );
+    };
+
+    const handleSubmit = () => {
+        if (selectedIndices.length === 0) return;
+        answerQuestion(selectedIndices);
+    };
+
     if (!question) return <p>Waiting for question...</p>;
 
-    const { type, text } = question;
+    const { type, text, choices } = question;
 
     // Timer and question number display
     const infoDisplay = (
@@ -77,11 +73,10 @@ export default function MatchView({ connection, lobbyId, question, answered, set
         case "MultipleChoice":
             return (
                 <div>
-                    {infoDisplay}
-                    {resultDisplay}
+                    <p>Time left: {timeLeft ?? "..."}</p>
                     <h2>{text}</h2>
                     <ul>
-                        {question.choices?.map((choice, i) => (
+                        {choices?.map((choice, i) => (
                             <li key={i}>
                                 <button onClick={() => answerQuestion(i)} disabled={answered}>
                                     {choice}
@@ -91,34 +86,40 @@ export default function MatchView({ connection, lobbyId, question, answered, set
                     </ul>
                 </div>
             );
-
         case "MultipleAnswer":
             return (
                 <div>
-                    {infoDisplay}
-                    {resultDisplay}
+                    <p>Time left: {timeLeft ?? "..."}</p>
                     <h2>{text}</h2>
                     <ul>
-                        {question.choices?.map((choice, i) => (
+                        {choices?.map((choice, i) => (
                             <li key={i}>
-                                <button onClick={() => answerQuestion([i])} disabled={answered}>
-                                    {choice}
+                                <button
+                                    onClick={() => !answered && toggleSelection(i)}
+                                    disabled={answered}
+                                >
+                                    {selectedIndices.includes(i) ? "[x]" : "[ ]"} {choice}
                                 </button>
                             </li>
                         ))}
                     </ul>
-                    <p>Currently only supports selecting one answer at a time in this UI.</p>
+                    <button onClick={handleSubmit} disabled={answered || selectedIndices.length === 0}>
+                        Submit Answers
+                    </button>
                 </div>
             );
 
         case "TrueFalse":
             return (
                 <div>
-                    {infoDisplay}
-                    {resultDisplay}
+                    <p>Time left: {timeLeft ?? "..."}</p>
                     <h2>{text}</h2>
-                    <button onClick={() => answerQuestion(true)} disabled={answered}>True</button>
-                    <button onClick={() => answerQuestion(false)} disabled={answered}>False</button>
+                    <button onClick={() => answerQuestion(true)} disabled={answered}>
+                        True
+                    </button>
+                    <button onClick={() => answerQuestion(false)} disabled={answered}>
+                        False
+                    </button>
                 </div>
             );
 

@@ -15,10 +15,14 @@ function App() {
     const [players, setPlayers] = useState([]);
     const [lobbyState, setLobbyState] = useState("Idle");
     const [isHost, setIsHost] = useState(false);
+    const [matchEndDurationInSeconds, setMatchEndDurationInSeconds] = useState(null);
 
     // MatchView
     const [question, setQuestion] = useState(null);
     const [answered, setAnswered] = useState(false);
+
+    // MatchEndView
+    const [playerResults, setPlayerResults] = useState(null);
 
     // Helper to connect to SignalR hub
     const connectToHub = async () => {
@@ -87,8 +91,10 @@ function App() {
         newConnection.on("QuestionTimeout", (QuestionTimeoutMessage) => {
             console.log(`Timeout in lobby ${lobbyId}: ${QuestionTimeoutMessage}`);
         });
-        newConnection.on("MatchEndStarted", (localLobbyId, duration) => {
+        newConnection.on("MatchEndStarted", (localLobbyId, durationInSeconds, localPlayerResults) => {
             // if (lobbyId == localLobbyId) {
+                setPlayerResults(localPlayerResults)
+                setMatchEndDurationInSeconds(durationInSeconds);
                 setLobbyState("Closed");
                 setQuestion(null);
                 console.log("Match ended in lobby ${lobbyId}!");
@@ -98,6 +104,7 @@ function App() {
             // if (lobbyId == localLobbyId) {
                 setLobbyState("Waiting");
                 console.log("Returning to lobby ${lobbyId}.");
+                setPlayerResults(null);
             // } else console.log(`MatchEndEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("Error", (errorMsg) => {
@@ -163,6 +170,8 @@ function App() {
             view = (
                 <MatchEndView
                     connection={connection}
+                    durationInSeconds={matchEndDurationInSeconds}
+                    playerResults={playerResults}
                 />
             );
             break;
