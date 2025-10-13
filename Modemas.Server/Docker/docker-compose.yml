@@ -1,0 +1,51 @@
+services:
+  ollama-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ollama-cpu
+    ports:
+      - "11435:11434"
+    volumes:
+      - ${PWD}/.ollama:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=1h
+      - OLLAMA_NUM_THREADS=4
+    restart: unless-stopped
+
+  ollama-nvidia:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ollama-nvidia
+    ports:
+      - "11435:11434"
+    volumes:
+      - ${PWD}/.ollama:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=1h
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    runtime: nvidia
+    restart: unless-stopped
+
+  ollama-amd:
+    build:
+      context: .
+      dockerfile: Dockerfile.amd
+    container_name: ollama-amd
+    ports:
+      - "11435:11434"
+    volumes:
+      - ${PWD}/.ollama:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=1h
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - video
+    restart: unless-stopped
