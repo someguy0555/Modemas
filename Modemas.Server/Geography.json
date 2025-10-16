@@ -1,0 +1,15 @@
+[
+  {
+    "text": "What is the largest continent?",
+    "choices": ["Africa", "Asia", "Europe", "Antarctica"],
+    "correctAnswer": 1,
+    "timeLimit": 10
+  },
+  {
+    "text": "Which country has the longest coastline?",
+    "choices": ["USA", "Russia", "Canada", "Australia"],
+    "correctAnswer": 2,
+    "timeLimit": 10
+  }
+]
+

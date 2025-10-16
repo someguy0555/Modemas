@@ -1,0 +1,15 @@
+[
+  {
+    "text": "Who was the first president of the United States?",
+    "choices": ["Abraham Lincoln", "George Washington", "Thomas Jefferson", "John Adams"],
+    "correctAnswer": 1,
+    "timeLimit": 10
+  },
+  {
+    "text": "In which year did World War II end?",
+    "choices": ["1945", "1939", "1918", "1950"],
+    "correctAnswer": 0,
+    "timeLimit": 10
+  }
+]
+

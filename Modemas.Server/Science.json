@@ -1,0 +1,14 @@
+[
+  {
+    "text": "What planet is known as the Red Planet?",
+    "choices": ["Earth", "Mars", "Jupiter", "Venus"],
+    "correctAnswer": 1,
+    "timeLimit": 10
+  },
+  {
+    "text": "What is H2O commonly known as?",
+    "choices": ["Oxygen", "Hydrogen", "Water", "Salt"],
+    "correctAnswer": 2,
+    "timeLimit": 10
+  }
+]
