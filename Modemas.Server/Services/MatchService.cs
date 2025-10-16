@@ -95,8 +95,17 @@ public class MatchService
         Console.WriteLine($"[RunMatchLoop] Match complete for lobby {lobby.LobbyId}. Notifying clients...");
         lobby.State = LobbyState.Waiting;
 
-        await clients.Group(lobby.LobbyId).SendAsync("MatchEndStarted", lobby.LobbyId);
-        await Task.Delay(10000);
+        int matchEndDurationInSeconds = 10;
+        var playerResults = lobby.Players
+            .Select(p => new
+            {
+                Name = p.Name,
+                Points = p.TotalPoints
+            })
+            .ToList();
+
+        await clients.Group(lobby.LobbyId).SendAsync("MatchEndStarted", lobby.LobbyId, matchEndDurationInSeconds, playerResults);
+        await Task.Delay(matchEndDurationInSeconds * 1000);
         await clients.Group(lobby.LobbyId).SendAsync("MatchEndEnded", lobby.LobbyId);
 
         Console.WriteLine($"[RunMatchLoop] Match ended in lobby {lobby.LobbyId}");
