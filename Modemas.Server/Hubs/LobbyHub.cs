@@ -33,6 +33,12 @@ public class LobbyHub : Hub
     public async Task AnswerQuestion(string lobbyId, object answer)
         => await _matchService.AnswerQuestion(Context, Clients, lobbyId, answer);
 
+    public async Task UpdateLobbySettings(string lobbyId, int numberOfQuestions, string theme, int questionTimerInSeconds)
+        => await _lobbyService.UpdateLobbySettings(Context, Clients, lobbyId, numberOfQuestions, theme, questionTimerInSeconds);
+    
+    public async Task KickPlayer(string lobbyId, string targetPlayerName)
+        => await _lobbyService.KickPlayer(Context, Clients, Groups, lobbyId, targetPlayerName);
+
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         await _lobbyService.HandleDisconnect(Context, Clients, Groups);

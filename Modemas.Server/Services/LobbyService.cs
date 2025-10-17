@@ -131,4 +131,50 @@ public class LobbyService
 
         Console.WriteLine($"Settings updated in lobby {lobbyId}");
     }
+    
+    public async Task KickPlayer(HubCallerContext context, IHubCallerClients clients, IGroupManager groups, string lobbyId, string targetPlayerName)
+    {
+        var lobby = _store.Get(lobbyId);
+        if (lobby == null)
+        {
+            await clients.Caller.SendAsync("Error", "Lobby not found");
+            Console.WriteLine($"KickPlayer: Lobby {lobbyId} not found (requested by {context.ConnectionId})");
+            return;
+        }
+
+        if (lobby.HostConnectionId != context.ConnectionId)
+        {
+            await clients.Caller.SendAsync("Error", "Only the host can kick players");
+            Console.WriteLine($"KickPlayer: Unauthorized kick attempt in lobby {lobbyId} by {context.ConnectionId}");
+            return;
+        }
+
+        var target = lobby.Players.FirstOrDefault(p => p.Name == targetPlayerName);
+        if (target == null)
+        {
+            await clients.Caller.SendAsync("Error", $"Player '{targetPlayerName}' not found in lobby");
+            Console.WriteLine($"KickPlayer: Player '{targetPlayerName}' not found in lobby {lobbyId}");
+            return;
+        }
+
+        // Remove player from lobby storage
+        lobby.Players.Remove(target);
+
+        try
+        {
+            // Notify the kicked client and remove from group
+            await clients.Client(target.ConnectionId).SendAsync("KickedFromLobby", $"You were kicked from lobby {lobbyId} by the host.");
+            await groups.RemoveFromGroupAsync(target.ConnectionId, lobbyId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"KickPlayer: Error notifying/removing kicked client {target.Name} ({target.ConnectionId}): {ex.Message}");
+            // continue to inform remaining clients even if notify/removal fails
+        }
+
+        // Notify remaining clients that the player was removed
+        await clients.Group(lobbyId).SendAsync("LobbyRemovePlayer", targetPlayerName);
+
+        Console.WriteLine($"Player {targetPlayerName} kicked from lobby {lobbyId} by host {context.ConnectionId}");
+    }
 }

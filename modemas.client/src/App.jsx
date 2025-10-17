@@ -55,6 +55,10 @@ function App() {
             });
             console.log(`Added player ${playerName} to lobby ${lobbyId}.`);
         });
+        newConnection.on("LobbyRemovePlayer", (removedPlayerName) => {
+            setPlayers((prev) => prev.filter(p => p !== removedPlayerName));
+            console.log(`Player ${removedPlayerName} removed from lobby ${lobbyId}.`);
+        });
         newConnection.on("VotingStarted", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
                 setLobbyState("Voting");
