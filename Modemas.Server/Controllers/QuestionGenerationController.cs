@@ -9,20 +9,17 @@ namespace Modemas.Server.Controllers;
 [Route("api/questions")]
 public class QuestionGenerationController : ControllerBase
 {
-    private readonly QuestionGenerationService _generator;
-    private readonly IQuestionRepository _repo;
+    private readonly QuestionGenerationService _service;
 
-    public QuestionGenerationController(QuestionGenerationService generator, IQuestionRepository repo)
+    public QuestionGenerationController(QuestionGenerationService service)
     {
-        _generator = generator;
-        _repo = repo;
+        _service = service;
     }
 
-    [HttpPost("generate")]
-    public async Task<IActionResult> Generate([FromBody] GenerateRequest request)
+    [HttpPost("get")]
+    public async Task<IActionResult> GetQuestions([FromBody] GenerateRequest request)
     {
-        var questions = await _generator.GenerateQuestionsAsync(request.Topic, request.Count);
-        await _repo.SaveAsync(questions);
+        var questions = await _service.GetOrGenerateQuestionsAsync(request.Topic, request.Count);
         return Ok(questions);
     }
 }

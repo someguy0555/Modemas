@@ -11,13 +11,13 @@ export default function TopicChooserView({ connection }) {
         setError(null);
 
         try {
-            const response = await fetch("/api/questions/generate", {
+            fetch("/api/questions/get", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    topic,
-                    numQuestions: 5,
-                }),
+                    topic: topicText,
+                    count: 5
+                })
             });
 
             if (!response.ok) {
