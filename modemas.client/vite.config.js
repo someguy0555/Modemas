@@ -53,7 +53,12 @@ export default defineConfig({
                 ws: true,  // I believe this enables WebSocket support, which SignalR uses underhood.
                 changeOrigin: true, // sometimes required
                 secure: false
-            }
+            },
+            '^/api': {
+                target: 'https://localhost:7128',
+                changeOrigin: true,
+                secure: false
+            },
         },
         port: 63446,
         https: {

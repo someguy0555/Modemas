@@ -24,9 +24,6 @@ public class LobbyHub : Hub
     public async Task JoinLobby(string lobbyId, string playerName)
         => await _lobbyService.JoinLobby(Context, Clients, Groups, lobbyId, playerName);
 
-    public async Task UpdateLobbySettings(string lobbyId, int numberOfQuestions, string theme, int questionTimerInSeconds)
-        => await _lobbyService.UpdateLobbySettings(Context, Clients, lobbyId, numberOfQuestions, theme, questionTimerInSeconds);
-
     public async Task StartVoting(string lobbyId)
         => await _lobbyService.StartVoting(Clients, lobbyId);
 
