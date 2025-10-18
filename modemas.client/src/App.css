@@ -9,3 +9,133 @@ th, td {
     padding-left: 1rem;
     padding-right: 1rem;
 }
+
+.waiting-view {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.waiting-container {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 1100px;
+    align-items: start;
+}
+
+.main-column {
+    margin-right: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.players-column {
+    text-align: left;
+    margin-left: 0.5rem;
+}
+
+.lobby-info {
+    text-align: left;
+    padding: 1rem;
+    border-radius: 6px;
+}
+.lobby-meta {
+    margin: 6px 0;
+    font-size: 0.95rem;
+}
+
+.players-column {
+    text-align: left;
+}
+.players-list {
+    list-style: none;
+    padding: 0.5rem;
+    margin: 0;
+    border-radius: 6px;
+    background: #fafafa;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.player-item {
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+.player-item:last-child {
+    border-bottom: none;
+}
+
+.card {
+    background: #ffffff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    text-align: left;
+}
+.host-controls h3 {
+    margin-top: 0;
+    padding-right: 500px;
+}
+
+.label {
+    display:block;
+    margin-top: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.topic-select, .settings-input {
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    margin: 0.35rem 0 0.8rem 0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+}
+
+.actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+.btn {
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+.btn-primary {
+    background: #2f80ed;
+    color: white;
+}
+.btn-secondary {
+    background: #f1f3f5;
+    color: #222;
+}
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+@media (max-width: 800px) {
+    .waiting-container {
+        grid-template-columns: 1fr;
+    }
+    /* ensure main column shows before the players list on small screens */
+    .main-column {
+        order: 1;
+    }
+    .players-column {
+        order: 2;
+    }
+    .host-controls {
+        order: 0;
+    }
+}
