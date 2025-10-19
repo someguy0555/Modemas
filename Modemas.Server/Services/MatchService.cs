@@ -26,24 +26,21 @@ public class MatchService
         if (lobby == null || lobby.State == LobbyState.Started)
             return;
 
-        var json = "questions.json".ReadAllFileText();
+        var questions = lobby.Match?.Questions ?? new List<Question>();
+        if (questions.Count == 0)
+        {
+            Console.WriteLine($"StartMatch: no questions available for lobby {lobbyId}. Aborting.");
+            await clients.Group(lobbyId).SendAsync("MatchStartFailed", lobbyId, "No questions available.");
+            return;
+        }
 
-        // var options = new JsonSerializerOptions
-        // {
-        //     PropertyNameCaseInsensitive = true,
-        //     Converters = { new QuestionConverter() },
-        // };
+        // Use existing serialization options only when you need to parse raw JSON;
+        // here we already have List<Question> from repository/generator.
 
-        var options = new JsonSerializerOptions();
-        options.Converters.Add(new JsonStringEnumConverter());
-        var questions = JsonSerializer.Deserialize<List<Question>>(json, options) ?? new();
-        // var questions = JsonSerializer.Deserialize<List<Question>>(json) ?? new();
-
-        lobby.Match.Questions = questions;
+        // lobby.Match is a potentially null value, fix later
         lobby.Match.CurrentQuestionIndex = 0;
         lobby.State = LobbyState.Started;
 
-        // Reset players’ answers
         foreach (var p in lobby.Players)
         {
             p.HasAnsweredCurrent = false;

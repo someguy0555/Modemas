@@ -4,5 +4,8 @@ namespace Modemas.Server.Interfaces;
 
 public interface IQuestionRepository
 {
-    Task SaveAsync(List<Question> questions);
+    Task<IEnumerable<Question>> GetByTopicAsync(string topic);
+    Task SaveAsync(string topic, IEnumerable<Question> questions);
+    Task<IEnumerable<string>> GetAllTopicsAsync();
+    Task DeleteAsync(string topic);
 }

@@ -23,10 +23,12 @@ builder.Services.AddSignalR().AddJsonProtocol(options =>
 {
     options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
+
 builder.Services.AddHttpClient<QuestionGenerationService>(client =>
 {
     client.Timeout = TimeSpan.FromMinutes(10);
 });
+builder.Services.AddHttpClient<QuestionGenerationService>();
 builder.Services.AddSingleton<LobbyStore>();
 builder.Services.AddSingleton<MatchService>();
 builder.Services.AddSingleton<LobbyService>();

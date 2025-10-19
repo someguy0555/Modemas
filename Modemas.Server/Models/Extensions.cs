@@ -8,19 +8,28 @@ public static class FileExtensions
     public static string ReadAllFileText(this string filePath)
     {
         if (!File.Exists(filePath))
-            throw new FileNotFoundException($"File not found: {filePath}");
-
-        var stringBuilder = new StringBuilder();
-
-        using var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-
-        string? line;
-        while ((line = reader.ReadLine()) != null)
         {
-            stringBuilder.AppendLine(line);
+            var defaultJson = "[]";
+            File.WriteAllText(filePath, defaultJson);
+            return defaultJson;
         }
 
-        return stringBuilder.ToString();
+        try
+        {
+            var text = File.ReadAllText(filePath);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                File.WriteAllText(filePath, "[]");
+                return "[]";
+            }
+
+            return text;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to read {filePath}: {ex.Message}. Resetting to empty JSON.");
+            File.WriteAllText(filePath, "[]");
+            return "[]";
+        }
     }
 }

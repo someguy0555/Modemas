@@ -1,25 +1,232 @@
 [
   {
-    "text": "What is the capital of France?",
-    "timeLimit": 15,
-    "points": 100,
-    "type": "MultipleChoice",
-    "choices": ["Paris", "London", "Berlin", "Rome"],
-    "correctAnswerIndex": 0
+    "Topic": "history",
+    "Questions": [
+      {
+        "choices": [
+          "1789",
+          "1688",
+          "1848",
+          "1763"
+        ],
+        "correctAnswer": 0,
+        "text": "The French Revolution began in which year?",
+        "timeLimit": 30,
+        "points": 5,
+        "type": "MultipleChoice"
+      },
+      {
+        "correctAnswer": false,
+        "text": "True or False: Japan became an empire around the same time as other East Asian powers?",
+        "timeLimit": 30,
+        "points": 5,
+        "type": "TrueFalse"
+      },
+      {
+        "choices": [
+          "The unification of Upper and Lower Egypt",
+          "The construction of the Pyramids",
+          "The rise of the Pharaohs",
+          "The Great Inversion ( decline of pharaonic power)"
+        ],
+        "correctAnswerIndices": [
+          0,
+          1
+        ],
+        "text": "Which of the following are key events in Ancient Egypt\u0027s history? (select multiple)",
+        "timeLimit": 30,
+        "points": 10,
+        "type": "MultipleAnswer"
+      },
+      {
+        "choices": [
+          "201 BCE",
+          "216 BCE",
+          "218 BCE",
+          "245 BCE"
+        ],
+        "correctAnswer": 0,
+        "text": "When did the Punic Wars\u0027 third part begin?",
+        "timeLimit": 30,
+        "points": 5,
+        "type": "MultipleChoice"
+      },
+      {
+        "correctAnswer": false,
+        "text": "True or False: Rome fell in 475 CE after the fall of the Gothic Empire?",
+        "timeLimit": 30,
+        "points": 5,
+        "type": "TrueFalse"
+      },
+      {
+        "choices": [
+          "1521",
+          "1482",
+          "1547",
+          "1492"
+        ],
+        "correctAnswerIndices": [
+          0,
+          2
+        ],
+        "text": "The Aztec Empire fell in which year and what were some key reasons for their collapse?",
+        "timeLimit": 30,
+        "points": 10,
+        "type": "MultipleAnswer"
+      },
+      {
+        "correctAnswer": true,
+        "text": "True or False: The decline of Mesoamerican Civilizations was primarily due to environmental and social factors?",
+        "timeLimit": 30,
+        "points": 5,
+        "type": "TrueFalse"
+      },
+      {
+        "choices": [
+          "It was the largest empire in pre-Columbian America",
+          "It flourished for several centuries",
+          "It collapsed around 1521",
+          "It had a capital at Tenochtitlan"
+        ],
+        "correctAnswerIndices": [
+          0,
+          3
+        ],
+        "text": "What were some key facts about Aztec civilization? (select multiple)",
+        "timeLimit": 30,
+        "points": 10,
+        "type": "MultipleAnswer"
+      },
+      {
+        "correctAnswer": false,
+        "text": "True or False: Japan\u0027s rise to power in the mid-16th century preceded other East Asian empires?",
+        "timeLimit": 30,
+        "points": 5,
+        "type": "TrueFalse"
+      }
+    ]
   },
   {
-    "text": "Select all prime numbers",
-    "timeLimit": 20,
-    "points": 100,
-    "type": "MultipleAnswer",
-    "choices": ["2", "3", "4", "5"],
-    "correctAnswerIndices": [0,1,3]
-  },
-  {
-    "text": "The Earth is flat",
-    "timeLimit": 10,
-    "points": 100,
-    "type": "TrueFalse",
-    "correctAnswer": false
+    "Topic": "basic mathematics",
+    "Questions": [
+      {
+        "choices": [
+          "13",
+          "14",
+          "15",
+          "16"
+        ],
+        "correctAnswer": 0,
+        "text": "What is 8 \u002B 5?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "MultipleChoice"
+      },
+      {
+        "choices": [
+          "3",
+          "4",
+          "5",
+          "6"
+        ],
+        "correctAnswer": 0,
+        "text": "What is 10 - 7?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "MultipleChoice"
+      },
+      {
+        "choices": [
+          "42",
+          "43",
+          "44",
+          "45"
+        ],
+        "correctAnswer": 0,
+        "text": "What is 6 \u00D7 7?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "MultipleChoice"
+      },
+      {
+        "choices": [
+          "3",
+          "4",
+          "5",
+          "6"
+        ],
+        "correctAnswer": 0,
+        "text": "What is 18 \u00F7 6?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "MultipleChoice"
+      },
+      {
+        "choices": [
+          "4",
+          "5",
+          "6",
+          "7"
+        ],
+        "correctAnswer": 0,
+        "text": "What is half of 8?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "MultipleChoice"
+      },
+      {
+        "choices": [
+          "-9",
+          "9",
+          "-6",
+          "6"
+        ],
+        "correctAnswer": 0,
+        "text": "What is (-3)\u00B2?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "MultipleChoice"
+      },
+      {
+        "correctAnswer": true,
+        "text": "Is sqrt(64) = 8 (integer)?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "TrueFalse"
+      },
+      {
+        "choices": [
+          "25%",
+          "30%",
+          "20%",
+          "40%"
+        ],
+        "correctAnswer": 0,
+        "text": "What percent of 120 is 30?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "MultipleChoice"
+      },
+      {
+        "choices": [
+          "8",
+          "9",
+          "7",
+          "6"
+        ],
+        "correctAnswer": 0,
+        "text": "John has twice as many apples as Mary. If Mary has 4, how many does John have?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "MultipleChoice"
+      },
+      {
+        "correctAnswer": true,
+        "text": "What is the sum of angles in a triangle?",
+        "timeLimit": 20,
+        "points": 10,
+        "type": "TrueFalse"
+      }
+    ]
   }
 ]
