@@ -2,6 +2,8 @@ using System.Text.Json.Serialization;
 
 using Modemas.Server.Services;
 using Modemas.Server.Hubs;
+using Modemas.Server.Models;
+using Modemas.Server.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,9 +23,15 @@ builder.Services.AddSignalR().AddJsonProtocol(options =>
 {
     options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
+builder.Services.AddHttpClient<QuestionGenerationService>(client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(10);
+});
 builder.Services.AddSingleton<LobbyStore>();
 builder.Services.AddSingleton<MatchService>();
 builder.Services.AddSingleton<LobbyService>();
+builder.Services.AddSingleton<IQuestionParser, QuestionParser>();
+builder.Services.AddSingleton<IQuestionRepository, JsonQuestionRepository>();
 
 var app = builder.Build();
 
