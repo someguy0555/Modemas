@@ -6,22 +6,44 @@ using Modemas.Server.Interfaces;
 namespace Modemas.Server.Controllers;
 
 [ApiController]
-[Route("api/questions")]
-public class QuestionGenerationController : ControllerBase
+[Route("api/[controller]")]
+public class QuestionsController : ControllerBase
 {
-    private readonly QuestionGenerationService _service;
+    private readonly IQuestionRepository _repository;
+    private readonly QuestionGenerationService _generator;
 
-    public QuestionGenerationController(QuestionGenerationService service)
+    public QuestionsController(IQuestionRepository repository, QuestionGenerationService generator)
     {
-        _service = service;
+        _repository = repository;
+        _generator = generator;
     }
 
-    [HttpPost("get")]
-    public async Task<IActionResult> GetQuestions([FromBody] GenerateRequest request)
+    [HttpGet("topics")]
+    public async Task<IActionResult> GetTopics()
     {
-        var questions = await _service.GetOrGenerateQuestionsAsync(request.Topic, request.Count);
+        var topics = await _repository.GetAllTopicsAsync();
+        return Ok(topics);
+    }
+
+    [HttpGet("{topic}")]
+    public async Task<IActionResult> GetByTopic(string topic)
+    {
+        var questions = await _repository.GetByTopicAsync(topic);
         return Ok(questions);
     }
-}
 
-public record GenerateRequest(string Topic, int Count);
+    [HttpPost("{topic}/generate")]
+    public async Task<IActionResult> GenerateTopic(string topic, [FromQuery] int count = 5)
+    {
+        var generated = await _generator.GenerateQuestionsAsync(topic, count);
+        await _repository.SaveAsync(topic, generated);
+        return Ok(generated);
+    }
+
+    [HttpDelete("{topic}")]
+    public async Task<IActionResult> DeleteTopic(string topic)
+    {
+        await _repository.DeleteAsync(topic);
+        return NoContent();
+    }
+}

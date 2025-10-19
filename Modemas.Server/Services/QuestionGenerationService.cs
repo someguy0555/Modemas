@@ -36,7 +36,7 @@ public class QuestionGenerationService
     /// <summary>
     /// Calls the local DeepSeek API to generate new questions.
     /// </summary>
-    private async Task<List<Question>> GenerateQuestionsAsync(string topic, int count)
+    public async Task<List<Question>> GenerateQuestionsAsync(string topic, int count)
     {
         var payload = new
         {

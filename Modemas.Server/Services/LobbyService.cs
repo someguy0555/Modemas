@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
 using Modemas.Server.Models;
 
+using Modemas.Server.Interfaces;
+
 namespace Modemas.Server.Services;
 
 /// <summary>
@@ -14,11 +16,19 @@ public class LobbyService
 {
     private readonly LobbyStore _store;
     private readonly MatchService _matchService;
+    private readonly QuestionGenerationService _questionGenerationService;
+    private readonly IQuestionRepository _repo;
 
-    public LobbyService(LobbyStore store, MatchService matchService)
+    public LobbyService(
+        LobbyStore store,
+        MatchService matchService,
+        QuestionGenerationService questionGenerationService,
+        IQuestionRepository repo)
     {
         _store = store;
         _matchService = matchService;
+        _questionGenerationService = questionGenerationService;
+        _repo = repo;
     }
 
     /// <summary>
@@ -74,16 +84,80 @@ public class LobbyService
 
     public async Task StartVoting(IHubCallerClients clients, string lobbyId)
     {
-        const int duration = 10;
+        // notify clients voting (or generation) started
+        await clients.Group(lobbyId).SendAsync("VotingStarted", lobbyId, 0);
 
-        await clients.Group(lobbyId).SendAsync("VotingStarted", lobbyId, duration);
-        await Task.Delay(duration * 1000);
+        // Attempt to load or generate questions
+        var ok = await WaitForQuestionsAsync(lobbyId);
 
+        // voting ended (or generation completed/failed)
         await clients.Group(lobbyId).SendAsync("VotingEnded", lobbyId);
-        // await _matchService.StartMatch(lobbyId);
+
+        if (!ok)
+        {
+            // Do not start match if questions are missing
+            await clients.Group(lobbyId).SendAsync("MatchStartFailed", lobbyId, "Questions unavailable. Please generate a topic.");
+            return;
+        }
+
         await _matchService.StartMatch(clients, lobbyId);
     }
 
+    /// <summary>
+    /// Returns true if questions are loaded into lobby.Match.Questions; false otherwise.
+    /// Actively generates questions if needed.
+    /// </summary>
+    public async Task<bool> WaitForQuestionsAsync(string lobbyId)
+    {
+        Console.WriteLine($"[WaitForQuestionsAsync] {lobbyId} started waiting.");
+        var lobby = _store.Get(lobbyId);
+        if (lobby == null) return false;
+
+        // Ensure LobbySettings exists and has a topic/count
+        var topic = lobby.LobbySettings?.Topic?.Trim();
+        if (string.IsNullOrEmpty(topic))
+        {
+            Console.WriteLine($"[WaitForQuestionsAsync] No topic set for lobby {lobbyId}");
+            return false;
+        }
+
+        var count = lobby.LobbySettings?.NumberOfQuestions > 0 ? lobby.LobbySettings.NumberOfQuestions : 5;
+
+        // 1) Try load from repo (fast)
+        var existing = (await _repo.GetByTopicAsync(topic)).ToList();
+        if (existing.Any())
+        {
+            lobby.Match ??= new LobbyMatch();
+            lobby.Match.Questions = existing;
+            Console.WriteLine($"[WaitForQuestionsAsync] Loaded {existing.Count} questions for topic '{topic}' from repository.");
+            return true;
+        }
+
+        // 2) No existing questions -> actively generate via QuestionGenerationService
+        try
+        {
+            Console.WriteLine($"[WaitForQuestionsAsync] Generating {count} questions for topic '{topic}'...");
+            var generated = (await _questionGenerationService.GenerateQuestionsAsync(topic, count))?.ToList();
+
+            if (generated != null && generated.Any())
+            {
+                // Save to repository and attach to lobby
+                await _repo.SaveAsync(topic, generated);
+                lobby.Match ??= new LobbyMatch();
+                lobby.Match.Questions = generated;
+                Console.WriteLine($"WaitForQuestionsAsync: Generated and saved {generated.Count} questions for topic '{topic}'.");
+                return true;
+            }
+
+            Console.WriteLine($"WaitForQuestionsAsync: Generation returned no questions for '{topic}'.");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"WaitForQuestionsAsync: Exception generating questions for '{topic}': {ex.Message}");
+            return false;
+        }
+    }
 
     public async Task HandleDisconnect(HubCallerContext context, IHubCallerClients clients, IGroupManager groups)
     {
@@ -111,7 +185,7 @@ public class LobbyService
         }
     }
 
-    public async Task UpdateLobbySettings(HubCallerContext context, IHubCallerClients clients, string lobbyId, int numberOfQuestions, string theme, int questionTimerInSeconds)
+    public async Task UpdateLobbySettings(HubCallerContext context, IHubCallerClients clients, string lobbyId, int numberOfQuestions, int questionTimerInSeconds, string theme)
     {
         var lobby = _store.Get(lobbyId);
         if (lobby == null)
@@ -127,11 +201,12 @@ public class LobbyService
 
         lobby.LobbySettings.NumberOfQuestions = numberOfQuestions;
         lobby.LobbySettings.QuestionTimerInSeconds = questionTimerInSeconds;
+        lobby.LobbySettings.Topic = theme;
         await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", numberOfQuestions, theme, questionTimerInSeconds);
 
         Console.WriteLine($"Settings updated in lobby {lobbyId}");
     }
-    
+
     public async Task KickPlayer(HubCallerContext context, IHubCallerClients clients, IGroupManager groups, string lobbyId, string targetPlayerName)
     {
         var lobby = _store.Get(lobbyId);
