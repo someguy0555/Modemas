@@ -97,7 +97,8 @@ public class MatchService
             .Select(p => new
             {
                 Name = p.Name,
-                Points = p.TotalPoints
+                TotalPoints = p.TotalPoints,
+                Scores = p.QuestionScores
             })
             .ToList();
 
@@ -168,11 +169,14 @@ public class MatchService
             }
 
             int points = question.IsCorrect(answer);
-            player.QuestionScores[lobby.Match.CurrentQuestionIndex] = points;
+            bool isCorrect = points > 0;
+
+            var entry = new ScoreEntry(lobby.Match.CurrentQuestionIndex, points, isCorrect);
+            player.QuestionScores.Add(entry);
+
             player.HasAnsweredCurrent = true;
 
-            bool isCorrect = points > 0;
-            await clients.Caller.SendAsync("AnswerAccepted", points, isCorrect);
+            await clients.Caller.SendAsync("AnswerAccepted", entry);
             Console.WriteLine($"Player {player.Name} answered question {lobby.Match.CurrentQuestionIndex} in lobby {lobbyId} earning {points} points. Correct: {isCorrect}");
         }
         catch (ArgumentException ex)
