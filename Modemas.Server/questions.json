@@ -228,5 +228,124 @@
         "type": "TrueFalse"
       }
     ]
+  },
+  {
+    "Topic": "winapi",
+    "Questions": [
+      {
+        "choices": [
+          "2008",
+          "2010",
+          "2009",
+          "2011"
+        ],
+        "correctAnswer": 0,
+        "text": "When was Microsoft Windows API (WinAPI) developed?",
+        "timeLimit": 40,
+        "points": 200,
+        "type": "MultipleChoice"
+      },
+      {
+        "choices": [
+          "WPF",
+          "WinAPI",
+          "WPF \u002B WinAPI",
+          "MDI"
+        ],
+        "correctAnswer": 0,
+        "text": "Which framework allows .NET and C# to interact with Windows APIs?",
+        "timeLimit": 30,
+        "points": 150,
+        "type": "MultipleChoice"
+      },
+      {
+        "correctAnswer": false,
+        "text": "Does WinAPI use managed code for Windows APIs?",
+        "timeLimit": 20,
+        "points": 100,
+        "type": "TrueFalse"
+      },
+      {
+        "choices": [
+          "GDI32",
+          "DirectQuery",
+          "DirectStorage",
+          "DirectShow"
+        ],
+        "correctAnswer": 0,
+        "text": "Which library is part of WinAPI?",
+        "timeLimit": 30,
+        "points": 150,
+        "type": "MultipleChoice"
+      },
+      {
+        "correctAnswer": true,
+        "text": "Is WinAPI related to .NET framework?",
+        "timeLimit": 25,
+        "points": 100,
+        "type": "TrueFalse"
+      },
+      {
+        "choices": [
+          "Version 6.0",
+          "Version 7.0",
+          "Version 8.0",
+          "Version 9.0"
+        ],
+        "correctAnswer": 0,
+        "text": "Which version of Windows introduced major changes in WinAPI?",
+        "timeLimit": 35,
+        "points": 200,
+        "type": "MultipleChoice"
+      },
+      {
+        "choices": [
+          "GDI32",
+          "DirectQuery",
+          "DirectStorage",
+          "DirectShow"
+        ],
+        "correctAnswerIndices": [
+          0,
+          1
+        ],
+        "text": "What is included in WinAPI?",
+        "timeLimit": 25,
+        "points": 100,
+        "type": "MultipleAnswer"
+      },
+      {
+        "choices": [
+          "Yes",
+          "No",
+          "Not sure"
+        ],
+        "correctAnswer": 0,
+        "text": "Does WinAPI use managed code?",
+        "timeLimit": 40,
+        "points": 150,
+        "type": "MultipleChoice"
+      },
+      {
+        "correctAnswer": true,
+        "text": "Which version of Windows introduced GDI32?",
+        "timeLimit": 25,
+        "points": 100,
+        "type": "TrueFalse"
+      },
+      {
+        "choices": [
+          "GDI32",
+          "DirectQuery",
+          "DirectStorage",
+          "DirectShow"
+        ],
+        "correctAnswer": 0,
+        "text": "What is a recent addition to WinAPI (as of .NET Framework version)?",
+        "timeLimit": 30,
+        "points": 200,
+        "type": "MultipleChoice"
+      }
+    ]
   }
 ]
