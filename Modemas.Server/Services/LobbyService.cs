@@ -199,9 +199,12 @@ public class LobbyService
             return;
         }
 
-        lobby.LobbySettings.NumberOfQuestions = numberOfQuestions;
-        lobby.LobbySettings.QuestionTimerInSeconds = questionTimerInSeconds;
-        lobby.LobbySettings.Topic = theme;
+        lobby.LobbySettings = lobby.LobbySettings with
+        {
+            NumberOfQuestions = numberOfQuestions,
+            QuestionTimerInSeconds = questionTimerInSeconds,
+            Topic = theme
+        };
         await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", numberOfQuestions, theme, questionTimerInSeconds);
 
         Console.WriteLine($"Settings updated in lobby {lobbyId}");

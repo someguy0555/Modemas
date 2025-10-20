@@ -18,8 +18,18 @@ public abstract class Question
     [JsonPropertyName("timeLimit")]
     public int TimeLimit { get; set; } = 10;
 
+    private int _points = 100;
     [JsonPropertyName("points")]
-    public int Points { get; set; } = 100;
+    public int Points
+    {
+        get => _points;
+        set
+        {
+            if (value < 0)
+                throw new ArgumentException("Points cannot be negative.");
+            _points = value;
+        }
+    }
 
     [JsonPropertyName("type")]
     public QuestionType Type { get; set; }
@@ -38,6 +48,12 @@ public class MultipleChoiceQuestion : Question
 
     [JsonPropertyName("correctAnswer")]
     public int CorrectAnswerIndex { get; set; }
+
+    public string this[int index]
+    {
+        get => Choices[index];
+        set => Choices[index] = value;
+    }
 
     public MultipleChoiceQuestion() => Type = QuestionType.MultipleChoice;
 
