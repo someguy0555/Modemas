@@ -49,3 +49,32 @@ services:
     group_add:
       - video
     restart: unless-stopped
+
+  windows-ollama-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: windows-ollama-cpu
+    ports:
+      - "11435:11434"
+    volumes:
+      - ./.ollama:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=1h
+      - OLLAMA_NUM_THREADS=4
+    restart: unless-stopped
+
+  windows-ollama-amd:
+    build:
+      context: .
+      dockerfile: Dockerfile.amd
+    container_name: windows-ollama-amd
+    ports:
+      - "11435:11434"
+    volumes:
+      - ./.ollama:/root/.ollama
+    environment:
+      - OLLAMA_KEEP_ALIVE=1h
+    group_add:
+      - video
+    restart: unless-stopped
