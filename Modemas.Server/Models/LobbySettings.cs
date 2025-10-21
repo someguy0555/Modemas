@@ -1,7 +1,7 @@
 namespace Modemas.Server.Models;
 
 public record LobbySettings(
-    int NumberOfQuestions = 10,
-    int QuestionTimerInSeconds = 10,
+    int NumberOfQuestions = 5,
+    int QuestionTimerInSeconds = 15,
     string Topic = ""
 );

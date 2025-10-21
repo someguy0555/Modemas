@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Modemas.Server.Models;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Modemas.Server.Services;
 

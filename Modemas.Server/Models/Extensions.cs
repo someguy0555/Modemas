@@ -1,6 +1,3 @@
-using System.IO;
-using System.Text;
-
 namespace Modemas.Server.Models;
 
 public static class FileExtensions
