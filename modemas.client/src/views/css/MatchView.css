@@ -1,0 +1,71 @@
+.match-view-container {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+}
+
+.timer {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: #2f80ed;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    transition: background 0.3s;
+    z-index: 999;
+}
+
+.timer.warning {
+    background: #e74c3c;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 50%, 100% { opacity: 1; }
+    25%, 75% { opacity: 0.2; }
+}
+.choices-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+}
+
+.choice-btn {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    border-radius: 12px;
+    border: 1px solid #2f80ed;
+    background-color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.choice-btn:hover:not(:disabled) {
+    background-color: #2f80ed;
+    color: white;
+}
+
+.choice-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.choice-btn.selected {
+    background-color: #2f80ed;
+    color: white;
+}
+
+.submit-btn {
+    border: none;
+    background-color: #27ae60;
+    color: white;
+}

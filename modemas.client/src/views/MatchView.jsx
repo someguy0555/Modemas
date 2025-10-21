@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
+import "./css/MatchView.css";
 
-/**
- * View for displaying the current question and choices during a match.
- */
 export default function MatchView({ connection, lobbyId, question, answered, setAnswered, isCorrect, setIsCorrect }) {
     const [selectedIndices, setSelectedIndices] = useState([]);
     const [timeLeft, setTimeLeft] = useState(null);
@@ -19,7 +17,7 @@ export default function MatchView({ connection, lobbyId, question, answered, set
         }
     };
 
-    // Handle countdown timer
+    // Countdown timer
     useEffect(() => {
         if (!question || question.timeLimit == null) return;
 
@@ -40,7 +38,7 @@ export default function MatchView({ connection, lobbyId, question, answered, set
         };
     }, [question]);
 
-    // Handle selection toggling for multiple answer questions
+    // MultipleAnswer selection toggling
     const toggleSelection = (i) => {
         setSelectedIndices((prev) =>
             prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]
@@ -56,72 +54,69 @@ export default function MatchView({ connection, lobbyId, question, answered, set
 
     const { type, text, choices } = question;
 
-    // Result notification
+    // Result display
     const resultDisplay = answered ? (
-        <div style={{marginBottom: "1em", color: isCorrect? "green" : "red"}}>
-            {isCorrect === true ? "Correct!" : "Incorrect!"}
+        <div className="result-message" style={{ color: isCorrect ? "green" : "red" }}>
+            {isCorrect ? "Correct!" : "Incorrect!"}
         </div>
     ) : null;
 
-    // Determine question type
-    switch (type) {
-        case "MultipleChoice":
-            return (
-                <div>
-                    {resultDisplay}
-                    <p>Time left: {timeLeft ?? "..."}</p>
-                    <h2>{text}</h2>
-                    <ul>
+    // Timer style
+    const timerClass = timeLeft !== null && timeLeft <= 5 ? "timer warning" : "timer";
+
+    return (
+        <div className="match-view-container">
+            <div className={timerClass}>{timeLeft ?? "..."}</div>
+            {resultDisplay}
+            <h2>{text}</h2>
+
+            {type === "MultipleChoice" && (
+                <ul className="choices-list">
+                    {choices?.map((choice, i) => (
+                        <li key={i}>
+                            <button className="choice-btn" onClick={() => answerQuestion(i)} disabled={answered}>
+                                {choice}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
+            {type === "MultipleAnswer" && (
+                <>
+                    <ul className="choices-list">
                         {choices?.map((choice, i) => (
                             <li key={i}>
-                                <button onClick={() => answerQuestion(i)} disabled={answered}>
+                                <button
+                                    className={`choice-btn ${selectedIndices.includes(i) ? "selected" : ""}`}
+                                    onClick={() => !answered && toggleSelection(i)}
+                                    disabled={answered}
+                                >
                                     {choice}
                                 </button>
                             </li>
                         ))}
                     </ul>
-                </div>
-            );
-        case "MultipleAnswer":
-            return (
-                <div>
-                    {resultDisplay}
-                    <p>Time left: {timeLeft ?? "..."}</p>
-                    <h2>{text}</h2>
-                    <ul>
-                        {choices?.map((choice, i) => (
-                            <li key={i}>
-                                <button
-                                    onClick={() => !answered && toggleSelection(i)}
-                                    disabled={answered}
-                                >
-                                    {selectedIndices.includes(i) ? "[x]" : "[ ]"} {choice}
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                    <button onClick={handleSubmit} disabled={answered || selectedIndices.length === 0}>
+                    <button
+                        className="choice-btn submit-btn"
+                        onClick={handleSubmit}
+                        disabled={answered || selectedIndices.length === 0}
+                    >
                         Submit Answers
                     </button>
-                </div>
-            );
+                </>
+            )}
 
-        case "TrueFalse":
-            return (
-                <div>
-                    {resultDisplay}
-                    <p>Time left: {timeLeft ?? "..."}</p>
-                    <h2>{text}</h2>
-                    <button onClick={() => answerQuestion(true)} disabled={answered}>
+            {type === "TrueFalse" && (
+                <div className="tf-buttons">
+                    <button className="choice-btn" onClick={() => answerQuestion(true)} disabled={answered}>
                         True
                     </button>
-                    <button onClick={() => answerQuestion(false)} disabled={answered}>
+                    <button className="choice-btn" onClick={() => answerQuestion(false)} disabled={answered}>
                         False
                     </button>
                 </div>
-            );
-
-        default:
-            return <p>Unknown question type: {type}</p>;
-    }
+            )}
+        </div>
+    );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./css/WaitingView.css";
 
 /**
  * View for waiting in a lobby before the match starts.
