@@ -63,8 +63,5 @@ public class Lobby
         set => _lobbySettings = value ?? new LobbySettings();
     }
 
-    // Computed properties
     public int TotalPlayers => Players.Count;
-    public bool IsActive => State is LobbyState.Waiting or LobbyState.Started or LobbyState.Voting;
-    public bool IsFull => TotalPlayers >= 8; // arbitrary example constraint
 }

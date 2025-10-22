@@ -33,9 +33,6 @@ public class MatchService
             return;
         }
 
-        // Use existing serialization options only when you need to parse raw JSON;
-        // here we already have List<Question> from repository/generator.
-
         // lobby.Match is a potentially null value, fix later
         lobby.Match.CurrentQuestionIndex = 0;
         lobby.State = LobbyState.Started;
