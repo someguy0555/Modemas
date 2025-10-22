@@ -1,14 +1,70 @@
 namespace Modemas.Server.Models;
 
 /// <summary>
-/// Class is responsible for storing lobby data locally on the backend.
+/// Represents an active lobby, containing its state, host, players, and match data.
 /// </summary>
 public class Lobby
 {
-    public string LobbyId = "";
-    public string HostConnectionId = "";
-    public LobbyState State = LobbyState.Waiting;
-    public LobbyMatch Match = new();
-    public List<Player> Players = new();
-    public LobbySettings LobbySettings = new();
-};
+    private string _lobbyId = string.Empty;
+    private string _hostConnectionId = string.Empty;
+    private LobbyState _state = LobbyState.Waiting;
+    private LobbyMatch _match = new();
+    private List<Player> _players = new();
+    private LobbySettings _lobbySettings = new();
+
+    public string LobbyId
+    {
+        get => _lobbyId;
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("Lobby ID cannot be empty.");
+            _lobbyId = value.Trim();
+        }
+    }
+
+    public string HostConnectionId
+    {
+        get => _hostConnectionId;
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("Host connection ID cannot be empty.");
+            _hostConnectionId = value.Trim();
+        }
+    }
+
+    public LobbyState State
+    {
+        get => _state;
+        set
+        {
+            if (!Enum.IsDefined(typeof(LobbyState), value))
+                throw new ArgumentException("Invalid lobby state.");
+            _state = value;
+        }
+    }
+
+    public LobbyMatch Match
+    {
+        get => _match;
+        set => _match = value ?? throw new ArgumentNullException(nameof(Match));
+    }
+
+    public List<Player> Players
+    {
+        get => _players;
+        set => _players = value ?? new List<Player>();
+    }
+
+    public LobbySettings LobbySettings
+    {
+        get => _lobbySettings;
+        set => _lobbySettings = value ?? new LobbySettings();
+    }
+
+    // Computed properties
+    public int TotalPlayers => Players.Count;
+    public bool IsActive => State is LobbyState.Waiting or LobbyState.Started or LobbyState.Voting;
+    public bool IsFull => TotalPlayers >= 8; // arbitrary example constraint
+}

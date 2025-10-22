@@ -1,8 +1,24 @@
-namespace Modemas.Server.Models
+namespace Modemas.Server.Models;
+
+public class QuestionTopicGroup
 {
-    public class QuestionTopicGroup
+    private string _topic = string.Empty;
+    private List<Question> _questions = new();
+
+    public string Topic
     {
-        public string Topic { get; set; } = string.Empty;
-        public List<Question> Questions { get; set; } = new();
+        get => _topic;
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("Topic cannot be empty.");
+            _topic = value.Trim();
+        }
+    }
+
+    public List<Question> Questions
+    {
+        get => _questions;
+        set => _questions = value ?? new List<Question>();
     }
 }

@@ -190,7 +190,7 @@ public class LobbyService
         }
     }
 
-    public async Task UpdateLobbySettings(HubCallerContext context, IHubCallerClients clients, string lobbyId, int numberOfQuestions, int questionTimerInSeconds, string theme)
+    public async Task UpdateLobbySettings(HubCallerContext context, IHubCallerClients clients, string lobbyId, LobbySettings lobbySettings)
     {
         var lobby = _store.Get(lobbyId);
         if (lobby == null)
@@ -204,12 +204,8 @@ public class LobbyService
             return;
         }
 
-        lobby.LobbySettings = new LobbySettings(
-            NumberOfQuestions: numberOfQuestions,
-            QuestionTimerInSeconds: questionTimerInSeconds,
-            Topic: theme
-        );
-        await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", numberOfQuestions, theme, questionTimerInSeconds);
+        lobby.LobbySettings = lobbySettings;
+        await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", lobby.LobbySettings);
 
         Console.WriteLine($"Settings updated in lobby {lobbyId}");
     }

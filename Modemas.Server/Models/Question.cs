@@ -12,13 +12,14 @@ public enum QuestionType
 [JsonConverter(typeof(QuestionConverter))]
 public abstract class Question
 {
+    private int _points = 100;
+
     [JsonPropertyName("text")]
-    public string Text { get; set; } = "";
+    public string Text { get; set; } = string.Empty;
 
     [JsonPropertyName("timeLimit")]
     public int TimeLimit { get; set; } = 10;
 
-    private int _points = 100;
     [JsonPropertyName("points")]
     public int Points
     {
@@ -32,36 +33,27 @@ public abstract class Question
     }
 
     [JsonPropertyName("type")]
-    public QuestionType Type { get; set; }
+    public QuestionType Type { get; protected set; }
 
-    /// <summary>
-    /// Returns points awarded for the given answer.
-    /// Throws an exception if answer type is invalid.
-    /// </summary>
     public abstract int IsCorrect(object answer);
 }
 
 public class MultipleChoiceQuestion : Question
 {
     [JsonPropertyName("choices")]
-    public List<string> Choices { get; set; } = new();
+    public List<string> Choices { get; init; } = new();
 
     [JsonPropertyName("correctAnswer")]
-    public int CorrectAnswerIndex { get; set; }
+    public int CorrectAnswerIndex { get; init; }
 
-    public string this[int index]
-    {
-        get => Choices[index];
-        set => Choices[index] = value;
-    }
+    public string this[int index] => Choices[index];
 
     public MultipleChoiceQuestion() => Type = QuestionType.MultipleChoice;
 
     public override int IsCorrect(object answer)
     {
         if (answer is not int idx)
-            throw new ArgumentException("Answer must be an integer index for MultipleChoiceQuestion.");
-
+            throw new ArgumentException("Answer must be an integer index.");
         return idx == CorrectAnswerIndex ? Points : 0;
     }
 }
@@ -69,38 +61,36 @@ public class MultipleChoiceQuestion : Question
 public class MultipleAnswerQuestion : Question
 {
     [JsonPropertyName("choices")]
-    public List<string> Choices { get; set; } = new();
+    public List<string> Choices { get; init; } = new();
 
     [JsonPropertyName("correctAnswerIndices")]
-    public List<int> CorrectAnswerIndices { get; set; } = new();
+    public List<int> CorrectAnswerIndices { get; init; } = new();
 
     public MultipleAnswerQuestion() => Type = QuestionType.MultipleAnswer;
 
     public override int IsCorrect(object answer)
     {
         if (answer is not IEnumerable<int> indices)
-            throw new ArgumentException("Answer must be a collection of indices for MultipleAnswerQuestion.");
+            throw new ArgumentException("Answer must be a collection of indices.");
 
-        var playerAnswers = indices.Distinct().ToList();
-        int correctSelections = playerAnswers.Intersect(CorrectAnswerIndices).Count();
+        var answers = indices.Distinct().ToList();
+        int correct = answers.Intersect(CorrectAnswerIndices).Count();
 
-        if (CorrectAnswerIndices.Count == 0) return 0;
-        return (correctSelections * Points) / CorrectAnswerIndices.Count;
+        return CorrectAnswerIndices.Count == 0 ? 0 : (correct * Points) / CorrectAnswerIndices.Count;
     }
 }
 
 public class TrueFalseQuestion : Question
 {
     [JsonPropertyName("correctAnswer")]
-    public bool CorrectAnswer { get; set; }
+    public bool CorrectAnswer { get; init; }
 
     public TrueFalseQuestion() => Type = QuestionType.TrueFalse;
 
     public override int IsCorrect(object answer)
     {
         if (answer is not bool b)
-            throw new ArgumentException("Answer must be a boolean for TrueFalseQuestion.");
-
+            throw new ArgumentException("Answer must be a boolean.");
         return b == CorrectAnswer ? Points : 0;
     }
 }
