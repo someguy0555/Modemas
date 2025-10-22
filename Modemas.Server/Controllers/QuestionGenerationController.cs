@@ -25,25 +25,25 @@ public class QuestionsController : ControllerBase
         return Ok(topics);
     }
 
-    [HttpGet("{topic}")]
-    public async Task<IActionResult> GetByTopic(string topic)
-    {
-        var questions = await _repository.GetByTopicAsync(topic);
-        return Ok(questions);
-    }
-
-    [HttpPost("{topic}/generate")]
-    public async Task<IActionResult> GenerateTopic(string topic, [FromQuery] int count = 5)
-    {
-        var generated = await _generator.GenerateQuestionsAsync(topic, count);
-        await _repository.SaveAsync(topic, generated);
-        return Ok(generated);
-    }
-
-    [HttpDelete("{topic}")]
-    public async Task<IActionResult> DeleteTopic(string topic)
-    {
-        await _repository.DeleteAsync(topic);
-        return NoContent();
-    }
+    // [HttpGet("{topic}")]
+    // public async Task<IActionResult> GetByTopic(string topic)
+    // {
+    //     var questions = await _repository.GetByTopicAsync(topic);
+    //     return Ok(questions);
+    // }
+    //
+    // [HttpPost("{topic}/generate")]
+    // public async Task<IActionResult> GenerateTopic(string topic, [FromQuery] int count = 5)
+    // {
+    //     var generated = await _generator.GenerateQuestionsAsync(count, topic);
+    //     await _repository.SaveAsync(topic, generated);
+    //     return Ok(generated);
+    // }
+    //
+    // [HttpDelete("{topic}")]
+    // public async Task<IActionResult> DeleteTopic(string topic)
+    // {
+    //     await _repository.DeleteAsync(topic);
+    //     return NoContent();
+    // }
 }

@@ -8,4 +8,6 @@ public interface IQuestionRepository
     Task SaveAsync(string topic, IEnumerable<Question> questions);
     Task<IEnumerable<string>> GetAllTopicsAsync();
     Task DeleteAsync(string topic);
+    Task CreateTopicAsync(string topic);
+    Task<bool> RenameTopicAsync(string oldTopic, string newTopic);
 }

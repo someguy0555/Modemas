@@ -20,13 +20,13 @@ public class QuestionGenerationService
     /// Returns questions for the given topic.
     /// Checks the repository first, generates new ones via DeepSeek if none found.
     /// </summary>
-    public async Task<IEnumerable<Question>> GetOrGenerateQuestionsAsync(string topic, int count)
+    public async Task<IEnumerable<Question>> GetOrGenerateQuestionsAsync(int count = 5, string topic = "general knowledge")
     {
         var existing = await _repo.GetByTopicAsync(topic);
         if (existing != null && existing.Any())
             return existing;
 
-        var newQuestions = await GenerateQuestionsAsync(topic, count);
+        var newQuestions = await GenerateQuestionsAsync(count, topic);
 
         await _repo.SaveAsync(topic, newQuestions);
 
@@ -36,7 +36,7 @@ public class QuestionGenerationService
     /// <summary>
     /// Calls the local DeepSeek API to generate new questions.
     /// </summary>
-    public async Task<List<Question>> GenerateQuestionsAsync(string topic, int count)
+    public async Task<List<Question>> GenerateQuestionsAsync(int count = 5, string topic = "general knowledge")
     {
         var payload = new
         {

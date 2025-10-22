@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.SignalR;
-using System.Text.Json;
 using Modemas.Server.Models;
 
 using Modemas.Server.Interfaces;
@@ -113,17 +112,17 @@ public class LobbyService
         var lobby = _store.Get(lobbyId);
         if (lobby == null) return false;
 
-        // Ensure LobbySettings exists and has a topic/count
         var topic = lobby.LobbySettings?.Topic?.Trim();
-        if (string.IsNullOrEmpty(topic))
+        var count = lobby.LobbySettings?.NumberOfQuestions ?? 0;
+
+        // Validate topic
+        if (string.IsNullOrWhiteSpace(topic))
         {
             Console.WriteLine($"[WaitForQuestionsAsync] No topic set for lobby {lobbyId}");
             return false;
         }
 
-        var count = lobby.LobbySettings?.NumberOfQuestions > 0 ? lobby.LobbySettings.NumberOfQuestions : 5;
-
-        // 1) Try load from repo (fast)
+        // 1️⃣ Try loading from repository
         var existing = (await _repo.GetByTopicAsync(topic)).ToList();
         if (existing.Any())
         {
@@ -133,19 +132,25 @@ public class LobbyService
             return true;
         }
 
-        // 2) No existing questions -> actively generate via QuestionGenerationService
+        // 2️⃣ No questions in repo — generate dynamically
         try
         {
             Console.WriteLine($"[WaitForQuestionsAsync] Generating {count} questions for topic '{topic}'...");
-            var generated = (await _questionGenerationService.GenerateQuestionsAsync(topic, count))?.ToList();
 
-            if (generated != null && generated.Any())
+            // Build call dynamically depending on argument validity
+            IEnumerable<Question>? generated = count > 0
+                ? await _questionGenerationService.GenerateQuestionsAsync(count: count, topic: topic)
+                : await _questionGenerationService.GenerateQuestionsAsync(topic: topic);
+
+            var questionList = generated?.ToList();
+
+            if (questionList != null && questionList.Any())
             {
-                // Save to repository and attach to lobby
-                await _repo.SaveAsync(topic, generated);
+                await _repo.SaveAsync(topic, questionList);
                 lobby.Match ??= new LobbyMatch();
-                lobby.Match.Questions = generated;
-                Console.WriteLine($"WaitForQuestionsAsync: Generated and saved {generated.Count} questions for topic '{topic}'.");
+                lobby.Match.Questions = questionList;
+
+                Console.WriteLine($"WaitForQuestionsAsync: Generated and saved {questionList.Count} questions for topic '{topic}'.");
                 return true;
             }
 
@@ -199,9 +204,11 @@ public class LobbyService
             return;
         }
 
-        lobby.LobbySettings.NumberOfQuestions = numberOfQuestions;
-        lobby.LobbySettings.QuestionTimerInSeconds = questionTimerInSeconds;
-        lobby.LobbySettings.Topic = theme;
+        lobby.LobbySettings = new LobbySettings(
+            NumberOfQuestions: numberOfQuestions,
+            QuestionTimerInSeconds: questionTimerInSeconds,
+            Topic: theme
+        );
         await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", numberOfQuestions, theme, questionTimerInSeconds);
 
         Console.WriteLine($"Settings updated in lobby {lobbyId}");
