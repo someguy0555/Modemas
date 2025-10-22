@@ -168,6 +168,7 @@ public class LobbyService
     {
         var lobby = _store.FindByConnection(context.ConnectionId);
         if (lobby == null) return;
+        Console.WriteLine($"Disconnecting from {lobby.LobbyId} by {context.ConnectionId}.");
 
         if (lobby.HostConnectionId == context.ConnectionId)
         {
@@ -185,7 +186,7 @@ public class LobbyService
         if (leavingPlayer != null)
         {
             lobby.Players.Remove(leavingPlayer);
-            await clients.Group(lobby.LobbyId).SendAsync("PlayerLeft", leavingPlayer.Name);
+            await clients.Group(lobby.LobbyId).SendAsync("LobbyRemovePlayer", leavingPlayer.Name);
             Console.WriteLine($"Player {leavingPlayer.Name} left lobby {lobby.LobbyId}");
         }
     }

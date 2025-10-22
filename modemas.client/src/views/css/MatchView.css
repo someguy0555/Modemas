@@ -5,6 +5,8 @@
     padding: 1rem;
     text-align: center;
     font-family: 'Inter', sans-serif;
+    color: black;
+    background-color: #ffffff;
 }
 
 .timer {
@@ -45,6 +47,7 @@
     border-radius: 12px;
     border: 1px solid #2f80ed;
     background-color: #ffffff;
+    color: #2f80ed;
     cursor: pointer;
     transition: all 0.2s;
 }

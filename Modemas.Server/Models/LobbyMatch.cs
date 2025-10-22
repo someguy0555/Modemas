@@ -17,12 +17,7 @@ public class LobbyMatch
     public int CurrentQuestionIndex
     {
         get => _currentQuestionIndex;
-        set
-        {
-            if (value < 0 || value >= Questions.Count)
-                throw new ArgumentOutOfRangeException(nameof(CurrentQuestionIndex), "Invalid question index.");
-            _currentQuestionIndex = value;
-        }
+        set => _currentQuestionIndex = value;
     }
 
     public Question? CurrentQuestion => 

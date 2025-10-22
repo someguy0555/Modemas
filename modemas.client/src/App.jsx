@@ -17,6 +17,19 @@ function App() {
     const [isHost, setIsHost] = useState(false);
     const [matchEndDurationInSeconds, setMatchEndDurationInSeconds] = useState(null);
 
+    // const [serverStats, setServerStats] = useState(null);
+    //
+    // const fetchServerStats = async () => {
+    //     try {
+    //         const response = await fetch("/api/serverstats");
+    //         if (!response.ok) throw new Error("Failed to fetch server stats");
+    //         const data = await response.json();
+    //         setServerStats(data);
+    //     } catch (err) {
+    //         console.error("Error fetching server stats:", err);
+    //     }
+    // };
+
     // MatchView
     const [question, setQuestion] = useState(null);
     const [answered, setAnswered] = useState(false);
@@ -62,21 +75,21 @@ function App() {
         });
         newConnection.on("VotingStarted", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState("Voting");
-                console.log(`Voting started in lobby ${lobbyId}.`);
+            setLobbyState("Voting");
+            console.log(`Voting started in lobby ${lobbyId}.`);
             // } else console.log(`VotingStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("VotingEnded", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState("Started");
-                // connection.invoke("StartMatch", localLobbyId);
-                console.log(`Match started in lobby ${localLobbyId}.`);
+            setLobbyState("Started");
+            // connection.invoke("StartMatch", localLobbyId);
+            console.log(`Match started in lobby ${localLobbyId}.`);
             // } else console.log(`VotingEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("LobbyMatchStarted", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState("Started");
-                console.log(`Match started in lobby ${lobbyId}.`);
+            setLobbyState("Started");
+            console.log(`Match started in lobby ${lobbyId}.`);
             // } else console.log(`LobbyMatchStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("KickedFromLobby", async (message) => {
@@ -104,18 +117,18 @@ function App() {
         });
         newConnection.on("MatchEndStarted", (localLobbyId, durationInSeconds, localPlayerResults) => {
             // if (lobbyId == localLobbyId) {
-                setPlayerResults(localPlayerResults)
-                setMatchEndDurationInSeconds(durationInSeconds);
-                setLobbyState("Closed");
-                setQuestion(null);
-                console.log("Match ended in lobby ${lobbyId}!");
+            setPlayerResults(localPlayerResults)
+            setMatchEndDurationInSeconds(durationInSeconds);
+            setLobbyState("Closed");
+            setQuestion(null);
+            console.log("Match ended in lobby ${lobbyId}!");
             // } else console.log(`MatchEndStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("MatchEndEnded", (localLobbyId) => {
             // if (lobbyId == localLobbyId) {
-                setLobbyState("Waiting");
-                console.log("Returning to lobby ${lobbyId}.");
-                setPlayerResults(null);
+            setLobbyState("Waiting");
+            console.log("Returning to lobby ${lobbyId}.");
+            setPlayerResults(null);
             // } else console.log(`MatchEndEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("Error", (errorMsg) => {

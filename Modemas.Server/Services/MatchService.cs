@@ -61,6 +61,7 @@ public class MatchService
 
         while (lobby.Match.CurrentQuestionIndex < lobby.Match.Questions.Count)
         {
+            Console.WriteLine($"[RunMatchLoop] Match loop next iteration start.");
             var question = lobby.Match.Questions[lobby.Match.CurrentQuestionIndex];
             Console.WriteLine($"[RunMatchLoop] Preparing question {lobby.Match.CurrentQuestionIndex} ({question.Type}) for lobby {lobby.LobbyId}");
 
@@ -84,8 +85,10 @@ public class MatchService
 
             Console.WriteLine($"[RunMatchLoop] Timeout reached for question {lobby.Match.CurrentQuestionIndex} in lobby {lobby.LobbyId}");
             await clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question {lobby.Match.CurrentQuestionIndex}");
+            Console.WriteLine($"[RunMatchLoop] Match loop next iteration anwsered question.");
 
             lobby.Match.CurrentQuestionIndex++;
+            Console.WriteLine($"[RunMatchLoop] Match loop next iteration end.");
         }
 
         Console.WriteLine($"[RunMatchLoop] Match complete for lobby {lobby.LobbyId}. Notifying clients...");
