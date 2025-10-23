@@ -13,7 +13,6 @@ Kaput is a web application made by team Modemas, using ASP.NET (C# NET 8.0) Core
 * **Alpha**:
     - The ability to join/create a lobby.
     - The ability to submit quiz topics.
-    - The ability to vote for topics.
     - The ability to be able to choose a topic, from which questions will be generated.
     - The ability to answer questions.
     - Very basic UI
@@ -21,6 +20,7 @@ Kaput is a web application made by team Modemas, using ASP.NET (C# NET 8.0) Core
     - Database will store questions.
     - Timer
     - Point system
+    - The ability to vote for topics.
     - Fix any bugs
     - Somewhat normal UI
 * **Final**:

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
+
 using Modemas.Server.Services;
+using Modemas.Server.Models;
 
 namespace Modemas.Server.Hubs;
 
@@ -30,9 +32,9 @@ public class LobbyHub : Hub
     public async Task AnswerQuestion(string lobbyId, object answer)
         => await _matchService.AnswerQuestion(Context, Clients, lobbyId, answer);
 
-    public async Task UpdateLobbySettings(string lobbyId, int numberOfQuestions = 10, int questionTimerInSeconds = 10, string theme = "general knowledge")
-        => await _lobbyService.UpdateLobbySettings(Context, Clients, lobbyId, numberOfQuestions, questionTimerInSeconds, theme);
-    
+    public async Task UpdateLobbySettings(string lobbyId, LobbySettings lobbySettings)
+        => await _lobbyService.UpdateLobbySettings(Context, Clients, lobbyId, lobbySettings);
+
     public async Task KickPlayer(string lobbyId, string targetPlayerName)
         => await _lobbyService.KickPlayer(Context, Clients, Groups, lobbyId, targetPlayerName);
 

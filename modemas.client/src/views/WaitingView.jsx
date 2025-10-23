@@ -50,15 +50,24 @@ export default function WaitingView({ connection, lobbyId, lobbyState, playerNam
             return;
         }
 
-        await connection.invoke("UpdateLobbySettings", lobbyId, numberOfQuestions, questionTimer, selectedTopic);
+        // Build settings record to send
+        const newSettings = {
+            numberOfQuestions: Number(numberOfQuestions),
+            questionTimerInSeconds: Number(questionTimer),
+            topic: selectedTopic
+        };
+
+        try {
+            await connection.invoke("UpdateLobbySettings", lobbyId, newSettings);
+            console.log("Lobby settings updated:", newSettings);
+        } catch (err) {
+            console.error("Failed to update lobby settings:", err);
+        }
     };
 
-    // New: kick a player (host action)
+    // Host: kick a player
     const kickPlayer = async (targetPlayer) => {
-        if (!connection) {
-            console.warn("No connection available to kick player.");
-            return;
-        }
+        if (!connection) return;
         if (!targetPlayer) return;
         if (!confirm(`Kick player '${targetPlayer}' from the lobby?`)) return;
 
@@ -71,17 +80,29 @@ export default function WaitingView({ connection, lobbyId, lobbyState, playerNam
         }
     };
 
-    // Listen for lobby updates from the server
+    // ***********************************************
+    // Listen for lobby settings updates from the server
+    // ***********************************************
     useEffect(() => {
-        if (isHost && connection) {
-            connection.on("LobbySettingsUpdated", (num, tp, timer) => {
-                setNumberOfQuestions(num);
-                setTopic(tp);
-                setQuestionTimer(timer);
-            });
-        }
-    }, [connection, isHost]);
+        if (!connection) return;
 
+        const handleLobbySettingsUpdated = (settings) => {
+            console.log("LobbySettingsUpdated received:", settings);
+            setNumberOfQuestions(settings.numberOfQuestions);
+            setQuestionTimer(settings.questionTimerInSeconds);
+            setTopic(settings.topic);
+        };
+
+        connection.on("LobbySettingsUpdated", handleLobbySettingsUpdated);
+
+        return () => {
+            connection.off("LobbySettingsUpdated", handleLobbySettingsUpdated);
+        };
+    }, [connection]);
+
+    // ***********************************************
+    // Render
+    // ***********************************************
     return (
         <div className="waiting-view">
             <div className="waiting-container">

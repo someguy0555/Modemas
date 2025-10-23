@@ -168,6 +168,7 @@ public class LobbyService
     {
         var lobby = _store.FindByConnection(context.ConnectionId);
         if (lobby == null) return;
+        Console.WriteLine($"Disconnecting from {lobby.LobbyId} by {context.ConnectionId}.");
 
         if (lobby.HostConnectionId == context.ConnectionId)
         {
@@ -185,12 +186,12 @@ public class LobbyService
         if (leavingPlayer != null)
         {
             lobby.Players.Remove(leavingPlayer);
-            await clients.Group(lobby.LobbyId).SendAsync("PlayerLeft", leavingPlayer.Name);
+            await clients.Group(lobby.LobbyId).SendAsync("LobbyRemovePlayer", leavingPlayer.Name);
             Console.WriteLine($"Player {leavingPlayer.Name} left lobby {lobby.LobbyId}");
         }
     }
 
-    public async Task UpdateLobbySettings(HubCallerContext context, IHubCallerClients clients, string lobbyId, int numberOfQuestions, int questionTimerInSeconds, string theme)
+    public async Task UpdateLobbySettings(HubCallerContext context, IHubCallerClients clients, string lobbyId, LobbySettings lobbySettings)
     {
         var lobby = _store.Get(lobbyId);
         if (lobby == null)
@@ -204,12 +205,8 @@ public class LobbyService
             return;
         }
 
-        lobby.LobbySettings = new LobbySettings(
-            NumberOfQuestions: numberOfQuestions,
-            QuestionTimerInSeconds: questionTimerInSeconds,
-            Topic: theme
-        );
-        await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", numberOfQuestions, theme, questionTimerInSeconds);
+        lobby.LobbySettings = lobbySettings;
+        await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", lobby.LobbySettings);
 
         Console.WriteLine($"Settings updated in lobby {lobbyId}");
     }

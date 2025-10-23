@@ -28,11 +28,13 @@ public class LobbyStore : IEnumerable<Lobby>
     public void Remove(string id) =>
         _lobbies.TryRemove(id, out _);
 
-    public Lobby? FindByConnection(string connectionId) =>
-        _lobbies.Values.FirstOrDefault(l =>
+    public Lobby? FindByConnection(string connectionId)
+        => _lobbies.Values.FirstOrDefault(l =>
             l.HostConnectionId == connectionId ||
             l.Players.Any(p => p.ConnectionId == connectionId));
 
     public IEnumerator<Lobby> GetEnumerator() => _lobbies.Values.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
+
+
