@@ -43,10 +43,13 @@ The project consists of two parts:
 ## Prerequisites
 * .NET 8.0 SDK
 * Node.js and npm
+* Docker (Docker Desktop or just cli Docker).
 
 ## Building
 1. Open a terminal in project root.
 2. 'cd' to Modemas.Server
+3. 'cd' to Docker
+4. Start docker container.
 3. Run:
     ```bash
     dotnet build
