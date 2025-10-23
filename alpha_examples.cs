@@ -35,3 +35,26 @@ public class Program
         Console.WriteLine($"WordCount: {i}"); // 3
     }
 }
+
+// ================================================================================
+// ================================================================================
+
+using System;
+
+class Program
+{
+    static void Greet(string name, string greeting = "Hello", int times = 1)
+    {
+        for (int i = 0; i < times; i++)
+        {
+            Console.WriteLine($"{greeting}, {name}!");
+        }
+    }
+
+    static void Main()
+    {
+        Greet("Alice");  
+        Greet("Bob", times: 3);  
+        Greet(name: "Charlie", greeting: "Hi", times: 2);
+    }
+}
