@@ -12,6 +12,7 @@ public enum QuestionType
 [JsonConverter(typeof(QuestionConverter))]
 public abstract class Question
 {
+    public int Id { get; set; }
     private int _points = 100;
 
     [JsonPropertyName("text")]

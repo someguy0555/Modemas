@@ -2,6 +2,8 @@ namespace Modemas.Server.Models;
 
 public class QuestionTopicGroup
 {
+    public int Id { get; set; }
+
     private string _topic = string.Empty;
     private List<Question> _questions = new();
 
