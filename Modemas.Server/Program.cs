@@ -1,9 +1,11 @@
 using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 
 using Modemas.Server.Services;
 using Modemas.Server.Hubs;
 using Modemas.Server.Models;
 using Modemas.Server.Interfaces;
+using Modemas.Server.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,11 +32,12 @@ builder.Services.AddHttpClient<QuestionGenerationService>(client =>
 });
 builder.Services.AddHttpClient<QuestionGenerationService>();
 builder.Services.AddSingleton<LobbyStore>();
-builder.Services.AddSingleton<MatchService>();
-builder.Services.AddSingleton<LobbyService>();
+builder.Services.AddScoped<MatchService>();
+builder.Services.AddScoped<LobbyService>();
 builder.Services.AddSingleton<IQuestionParser, QuestionParser>();
-builder.Services.AddSingleton<IQuestionRepository, JsonQuestionRepository>();
-
+builder.Services.AddScoped<IQuestionRepository, EfQuestionRepository>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=modemas.db"));
 var app = builder.Build();
 
 app.UseDefaultFiles();
@@ -56,5 +59,13 @@ app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 app.MapHub<LobbyHub>("/lobbyhub");
+
+// Idk, used it to migrate and stuff.
+// using (var scope = app.Services.CreateScope())
+// {
+//     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//     db.Database.EnsureDeleted();
+//     db.Database.EnsureCreated();
+// }
 
 app.Run();
