@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 
+using Microsoft.AspNetCore.SignalR;
 using Modemas.Server.Services;
 using Modemas.Server.Hubs;
 using Modemas.Server.Models;
@@ -36,6 +37,11 @@ builder.Services.AddScoped<MatchService>();
 builder.Services.AddScoped<LobbyService>();
 builder.Services.AddSingleton<IQuestionParser, QuestionParser>();
 builder.Services.AddScoped<IQuestionRepository, EfQuestionRepository>();
+builder.Services.AddScoped<LobbyNotifier>(sp =>
+{
+    var hubContext = sp.GetRequiredService<IHubContext<LobbyHub>>();
+    return new LobbyNotifier(hubContext.Clients, hubContext.Groups);
+});
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=modemas.db"));
 var app = builder.Build();
