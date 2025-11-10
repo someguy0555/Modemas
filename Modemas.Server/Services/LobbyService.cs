@@ -37,7 +37,7 @@ public class LobbyService : ILobbyService
     {
         var lobby = _manager.CreateLobby(connectionId);
 
-        await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
+        // await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
         await _notifier.NotifyLobbyCreated(connectionId, lobby.LobbyId);
 
         await JoinLobby(connectionId, lobby.LobbyId, hostName);
