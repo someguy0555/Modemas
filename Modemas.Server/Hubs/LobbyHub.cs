@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 
-using Modemas.Server.Services;
+using Modemas.Server.Interfaces;
 using Modemas.Server.Models;
 
 namespace Modemas.Server.Hubs;
@@ -11,10 +11,10 @@ namespace Modemas.Server.Hubs;
 /// </summary>
 public class LobbyHub : Hub
 {
-    private readonly LobbyService _lobbyService;
-    private readonly MatchService _matchService;
+    private readonly ILobbyService _lobbyService;
+    private readonly IMatchService _matchService;
 
-    public LobbyHub(LobbyService lobbyService, MatchService matchService)
+    public LobbyHub(ILobbyService lobbyService, IMatchService matchService)
     {
         _lobbyService = lobbyService;
         _matchService = matchService;

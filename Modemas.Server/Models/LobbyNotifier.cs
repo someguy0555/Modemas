@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.SignalR;
+using Modemas.Server.Interfaces;
+
 namespace Modemas.Server.Models;
 
-public class LobbyNotifier
+public class LobbyNotifier : ILobbyNotifier
 {
     private readonly IHubClients _clients;
     private readonly IGroupManager _groups;

@@ -31,17 +31,17 @@ builder.Services.AddHttpClient<QuestionGenerationService>(client =>
 {
     client.Timeout = TimeSpan.FromMinutes(10);
 });
-builder.Services.AddHttpClient<QuestionGenerationService>();
+// builder.Services.AddHttpClient<QuestionGenerationService>();
 
 builder.Services.AddSingleton<ILobbyStore, LobbyStore>();
-builder.Services.AddSingleton<LobbyManager>();
+builder.Services.AddScoped<ILobbyManager, LobbyManager>();
 builder.Services.AddSingleton<IQuestionParser, QuestionParser>();
 
-builder.Services.AddScoped<LobbyService>();
-builder.Services.AddScoped<MatchService>();
-builder.Services.AddScoped<QuestionGenerationService>();
+builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<ILobbyService, LobbyService>();
+builder.Services.AddScoped<IQuestionGenerationService, QuestionGenerationService>();
 builder.Services.AddScoped<IQuestionRepository, JsonQuestionRepository>();
-builder.Services.AddScoped<LobbyNotifier>(sp =>
+builder.Services.AddScoped<ILobbyNotifier, LobbyNotifier>(sp =>
 {
     var hubContext = sp.GetRequiredService<IHubContext<LobbyHub>>();
     return new LobbyNotifier(hubContext.Clients, hubContext.Groups);

@@ -2,7 +2,7 @@ using Modemas.Server.Interfaces;
 
 namespace Modemas.Server.Models;
 
-public class LobbyManager
+public class LobbyManager : ILobbyManager
 {
     private readonly ILobbyStore _store;
 

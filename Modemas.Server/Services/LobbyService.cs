@@ -8,19 +8,19 @@ namespace Modemas.Server.Services;
 /// - Create / Join / Leave / Kick / Disconnect
 /// - Start voting and handle question generation
 /// </summary>
-public class LobbyService
+public class LobbyService : ILobbyService
 {
-    private readonly LobbyManager _manager;
-    private readonly LobbyNotifier _notifier;
-    private readonly MatchService _matchService;
-    private readonly QuestionGenerationService _questionGenerationService;
+    private readonly ILobbyManager _manager;
+    private readonly ILobbyNotifier _notifier;
+    private readonly IMatchService _matchService;
+    private readonly IQuestionGenerationService _questionGenerationService;
     private readonly IQuestionRepository _repo;
 
     public LobbyService(
-        LobbyManager manager,
-        LobbyNotifier notifier,
-        MatchService matchService,
-        QuestionGenerationService questionGenerationService,
+        ILobbyManager manager,
+        ILobbyNotifier notifier,
+        IMatchService matchService,
+        IQuestionGenerationService questionGenerationService,
         IQuestionRepository repo)
     {
         _manager = manager;

@@ -76,7 +76,6 @@ function App() {
         newConnection.on("VotingStarted", (localLobbyId) => {
             console.log(`VotingStarted: localLobbyId = ${localLobbyId}`);
             setLobbyState("Voting");
-            console.log(`Voting started in lobby ${lobbyId}.`);
         });
         newConnection.on("VotingEnded", (localLobbyId) => {
             console.log(`VotingEnded: localLobbyId = ${localLobbyId}`);
@@ -105,7 +104,7 @@ function App() {
             setPoints(null);
         });
         newConnection.on("AnswerAccepted", (entry) => {
-            console.log("AnswerAccepted:", question);
+            console.log("AnswerAccepted: entry = ", entry);
             setIsCorrect(entry.isCorrect);
             setPoints(entry.points);
         });
@@ -113,9 +112,9 @@ function App() {
             console.log(`QuestionTimeout in lobby ${lobbyId}: message = ${QuestionTimeoutMessage}`);
         });
         newConnection.on("MatchEndStarted", (localLobbyId, durationInSeconds, localPlayerResults) => {
-            console.log(`MatchEndStarted: localLobbyId = ${localLobbyId}, duration = ${lobbyId}, results = localPlayerResults`);
-            setPlayerResults(localPlayerResults)
+            console.log(`MatchEndStarted: localLobbyId = ${localLobbyId}, duration = ${durationInSeconds}, results = ${localPlayerResults}`);
             setMatchEndDurationInSeconds(durationInSeconds);
+            setPlayerResults(localPlayerResults)
             setLobbyState("Closed");
             setQuestion(null);
         });
