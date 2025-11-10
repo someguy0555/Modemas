@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Modemas.Server.Models;
+using Modemas.Server.Interfaces;
 
 namespace Modemas.Server.Services;
 
@@ -7,10 +9,10 @@ namespace Modemas.Server.Services;
 /// </summary>
 public class MatchService
 {
-    private readonly LobbyStore _store;
+    private readonly ILobbyStore _store;
     private readonly LobbyNotifier _notifier;
 
-    public MatchService(LobbyStore store, LobbyNotifier notifier)
+    public MatchService(ILobbyStore store, LobbyNotifier notifier)
     {
         _store = store;
         _notifier = notifier;
@@ -58,6 +60,11 @@ public class MatchService
 
             int duration = question.TimeLimit;
 
+            // Console.WriteLine($"Original: {question}");
+            // Console.WriteLine($"Original: {question.TimeLimit}");
+            // Console.WriteLine($"Original: {question.Text}");
+            // Console.WriteLine($"Original: {question.Points}");
+            // Console.WriteLine($"Original: {question.Type}");
             await _notifier.NotifyGroup(lobby.LobbyId, "NewQuestion", question);
 
             // Wait for answers
@@ -116,6 +123,30 @@ public class MatchService
 
         try
         {
+            if (answer is JsonElement json)
+            {
+                switch (question.Type)
+                {
+                    case QuestionType.MultipleChoice:
+                        if (json.ValueKind == JsonValueKind.Number && json.TryGetInt32(out var intVal))
+                            answer = intVal;
+                        break;
+
+                    case QuestionType.MultipleAnswer:
+                        if (json.ValueKind == JsonValueKind.Array)
+                            answer = json.EnumerateArray()
+                                         .Where(e => e.ValueKind == JsonValueKind.Number)
+                                         .Select(e => e.GetInt32())
+                                         .ToList();
+                        break;
+
+                    case QuestionType.TrueFalse:
+                        if (json.ValueKind == JsonValueKind.True || json.ValueKind == JsonValueKind.False)
+                            answer = json.GetBoolean();
+                        break;
+                }
+            }
+
             int points = question.IsCorrect(answer);
             bool isCorrect = points > 0;
 

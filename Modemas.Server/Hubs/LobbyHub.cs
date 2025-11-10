@@ -21,10 +21,10 @@ public class LobbyHub : Hub
     }
 
     public async Task CreateLobby(string hostName)
-        => await _lobbyService.CreateLobby(hostName);
+        => await _lobbyService.CreateLobby(Context.ConnectionId, hostName);
 
     public async Task JoinLobby(string lobbyId, string playerName)
-        => await _lobbyService.JoinLobby(lobbyId, playerName);
+        => await _lobbyService.JoinLobby(Context.ConnectionId, lobbyId, playerName);
 
     public async Task StartVoting(string lobbyId)
         => await _lobbyService.StartVoting(lobbyId);
@@ -32,15 +32,15 @@ public class LobbyHub : Hub
     public async Task AnswerQuestion(string lobbyId, object answer)
         => await _matchService.AnswerQuestion(Context.ConnectionId, lobbyId, answer);
 
-    public async Task UpdateLobbySettings(string lobbyId, LobbySettings lobbySettings)
-        => await _lobbyService.UpdateLobbySettings(lobbyId, lobbySettings);
+    public async Task UpdateLobbySettings(string lobbyId, LobbySettings settings)
+        => await _lobbyService.UpdateLobbySettings(Context.ConnectionId, lobbyId, settings);
 
-    public async Task KickPlayer(string lobbyId, string targetPlayerName)
-        => await _lobbyService.KickPlayer(lobbyId, targetPlayerName);
+    public async Task KickPlayer(string lobbyId, string playerName)
+        => await _lobbyService.KickPlayer(Context.ConnectionId, lobbyId, playerName);
 
-    public override async Task OnDisconnectedAsync(Exception? exception)
+    public override async Task OnDisconnectedAsync(Exception? ex)
     {
         await _lobbyService.HandleDisconnect(Context.ConnectionId);
-        await base.OnDisconnectedAsync(exception);
+        await base.OnDisconnectedAsync(ex);
     }
 }

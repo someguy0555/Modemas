@@ -32,16 +32,21 @@ builder.Services.AddHttpClient<QuestionGenerationService>(client =>
     client.Timeout = TimeSpan.FromMinutes(10);
 });
 builder.Services.AddHttpClient<QuestionGenerationService>();
-builder.Services.AddSingleton<LobbyStore>();
-builder.Services.AddScoped<MatchService>();
-builder.Services.AddScoped<LobbyService>();
+
+builder.Services.AddSingleton<ILobbyStore, LobbyStore>();
+builder.Services.AddSingleton<LobbyManager>();
 builder.Services.AddSingleton<IQuestionParser, QuestionParser>();
-builder.Services.AddScoped<IQuestionRepository, EfQuestionRepository>();
+
+builder.Services.AddScoped<LobbyService>();
+builder.Services.AddScoped<MatchService>();
+builder.Services.AddScoped<QuestionGenerationService>();
+builder.Services.AddScoped<IQuestionRepository, JsonQuestionRepository>();
 builder.Services.AddScoped<LobbyNotifier>(sp =>
 {
     var hubContext = sp.GetRequiredService<IHubContext<LobbyHub>>();
     return new LobbyNotifier(hubContext.Clients, hubContext.Groups);
 });
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=modemas.db"));
 var app = builder.Build();
