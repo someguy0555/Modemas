@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Modemas.Server.Models;
+using System.Linq;
 
 using Modemas.Server.Interfaces;
 
@@ -124,12 +125,37 @@ public class LobbyService
 
         // 1️⃣ Try loading from repository
         var existing = (await _repo.GetByTopicAsync(topic)).ToList();
+        var timer = lobby.LobbySettings.QuestionTimerInSeconds;
+
         if (existing.Any())
         {
-            lobby.Match ??= new LobbyMatch();
-            lobby.Match.Questions = existing;
-            Console.WriteLine($"[WaitForQuestionsAsync] Loaded {existing.Count} questions for topic '{topic}' from repository.");
-            return true;
+            if (existing.Count >= count)
+            {
+                var chosen = existing.Take(count).ToList();
+                foreach (var q in chosen) q.TimeLimit = timer;
+                lobby.Match ??= new LobbyMatch();
+                lobby.Match.Questions = chosen;
+                Console.WriteLine($"[WaitForQuestionsAsync] Loaded {chosen.Count} questions for topic '{topic}' from repository.");
+                return true;
+            }
+            else
+            {
+                // repo has fewer than requested: generate missing
+                foreach (var q in existing) q.TimeLimit = timer;
+                var needed = count - existing.Count;
+                var generated = await _questionGenerationService.GenerateQuestionsAsync(needed, topic);
+                foreach (var q in generated) q.TimeLimit = timer;
+
+                var combined = existing.Concat(generated).ToList();
+
+                if (generated.Any())
+                    await _repo.SaveAsync(topic, combined);
+
+                lobby.Match ??= new LobbyMatch();
+                lobby.Match.Questions = combined;
+                Console.WriteLine($"[WaitForQuestionsAsync] Combined repo ({existing.Count}) + generated ({generated?.Count() ?? 0}) = {lobby.Match.Questions.Count} for topic '{topic}'.");
+                return lobby.Match.Questions.Any();
+            }
         }
 
         // 2️⃣ No questions in repo — generate dynamically
@@ -137,25 +163,23 @@ public class LobbyService
         {
             Console.WriteLine($"[WaitForQuestionsAsync] Generating {count} questions for topic '{topic}'...");
 
-            // Build call dynamically depending on argument validity
-            IEnumerable<Question>? generated = count > 0
-                ? await _questionGenerationService.GenerateQuestionsAsync(count: count, topic: topic)
-                : await _questionGenerationService.GenerateQuestionsAsync(topic: topic);
-
-            var questionList = generated?.ToList();
-
-            if (questionList != null && questionList.Any())
+            var questions = await _questionGenerationService.GenerateQuestionsAsync(count, topic);
+            if (questions == null || !questions.Any())
             {
-                await _repo.SaveAsync(topic, questionList);
-                lobby.Match ??= new LobbyMatch();
-                lobby.Match.Questions = questionList;
-
-                Console.WriteLine($"WaitForQuestionsAsync: Generated and saved {questionList.Count} questions for topic '{topic}'.");
-                return true;
+                Console.WriteLine($"WaitForQuestionsAsync: Generation returned no questions for '{topic}'.");
+                return false;
             }
 
-            Console.WriteLine($"WaitForQuestionsAsync: Generation returned no questions for '{topic}'.");
-            return false;
+            // Ensure generated questions use the lobby's timer
+            foreach (var q in questions)
+                q.TimeLimit = timer;
+
+            await _repo.SaveAsync(topic, questions);
+            lobby.Match ??= new LobbyMatch();
+            lobby.Match.Questions = questions.ToList();
+
+            Console.WriteLine($"WaitForQuestionsAsync: Generated and saved {lobby.Match.Questions.Count} questions for topic '{topic}'.");
+            return true;
         }
         catch (Exception ex)
         {
@@ -205,10 +229,81 @@ public class LobbyService
             return;
         }
 
-        lobby.LobbySettings = lobbySettings;
-        await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", lobby.LobbySettings);
+        // Sanitize incoming settings
+        var sanitizedNumber = Math.Max(1, lobbySettings.NumberOfQuestions);
+        var sanitizedTimer = Math.Max(1, lobbySettings.QuestionTimerInSeconds);
+        var sanitizedTopic = (lobbySettings.Topic ?? string.Empty).Trim();
 
-        Console.WriteLine($"Settings updated in lobby {lobbyId}");
+        if (string.IsNullOrWhiteSpace(sanitizedTopic))
+        {
+            await clients.Caller.SendAsync("Error", "Topic cannot be empty");
+            return;
+        }
+
+        // Apply settings to lobby
+        lobby.LobbySettings = new LobbySettings(
+            NumberOfQuestions: sanitizedNumber,
+            QuestionTimerInSeconds: sanitizedTimer,
+            Topic: sanitizedTopic
+        );
+
+        // If a match already has questions loaded, update their time limits and adjust count to match requested number
+        if (lobby.Match?.Questions != null && lobby.Match.Questions.Any())
+        {
+            // update time limits
+            foreach (var q in lobby.Match.Questions)
+                q.TimeLimit = sanitizedTimer;
+
+            // trim if too many
+            if (lobby.Match.Questions.Count > sanitizedNumber)
+            {
+                lobby.Match.Questions = lobby.Match.Questions.Take(sanitizedNumber).ToList();
+            }
+            // extend if too few
+            else if (lobby.Match.Questions.Count < sanitizedNumber)
+            {
+                var needed = sanitizedNumber - lobby.Match.Questions.Count;
+
+                // try to get additional unique questions from repo
+                var repoList = (await _repo.GetByTopicAsync(sanitizedTopic)).ToList();
+                var additionalFromRepo = repoList
+                    .Where(r => !lobby.Match.Questions.Any(c => c.Text == r.Text))
+                    .Take(needed)
+                    .ToList();
+
+                foreach (var q in additionalFromRepo)
+                    q.TimeLimit = sanitizedTimer;
+
+                lobby.Match.Questions.AddRange(additionalFromRepo);
+                needed -= additionalFromRepo.Count;
+
+                // if still need more, generate new ones
+                if (needed > 0)
+                {
+                    var gen = await _questionGenerationService.GenerateQuestionsAsync(needed, sanitizedTopic);
+                    foreach (var q in gen)
+                        q.TimeLimit = sanitizedTimer;
+
+                    if (gen.Any())
+                    {
+                        // persist combined repository (existing repo + newly generated)
+                        var merged = repoList.Concat(gen).ToList();
+                        await _repo.SaveAsync(sanitizedTopic, merged);
+                        lobby.Match.Questions.AddRange(gen);
+                    }
+                }
+            }
+        }
+
+        // Notify clients with camelCase payload as client expects
+        await clients.Group(lobbyId).SendAsync("LobbySettingsUpdated", new
+        {
+            numberOfQuestions = sanitizedNumber,
+            questionTimerInSeconds = sanitizedTimer,
+            topic = sanitizedTopic
+        });
+
+        Console.WriteLine($"Settings updated in lobby {lobbyId}: questions={sanitizedNumber}, timer={sanitizedTimer}, topic='{sanitizedTopic}'");
     }
 
     public async Task KickPlayer(HubCallerContext context, IHubCallerClients clients, IGroupManager groups, string lobbyId, string targetPlayerName)
