@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./css/WaitingView.css";
+import logo from "../assets/logo.svg";
 
 /**
  * View for waiting in a lobby before the match starts.
@@ -80,6 +81,21 @@ export default function WaitingView({ connection, lobbyId, lobbyState, playerNam
         }
     };
 
+
+    // Leave lobby (for the current player)
+    const leaveLobby = async () => {
+        if (!connection) return;
+        const ok = confirm("Leave the lobby and return to the main menu?");
+        if (!ok) return;
+        try {
+            await connection.stop();
+        } catch (err) {
+            console.error("Error while stopping connection:", err);
+        } finally {
+            window.location.reload();
+        }
+    };
+
     // ***********************************************
     // Listen for lobby settings updates from the server
     // ***********************************************
@@ -105,8 +121,16 @@ export default function WaitingView({ connection, lobbyId, lobbyState, playerNam
     // ***********************************************
     return (
         <div className="waiting-view">
+            {/* Fixed leave button in the upper left corner */}
+            <div className="leave-button-fixed">
+                <button className="btn btn-secondary" onClick={leaveLobby} title="Leave lobby">
+                    ← Leave
+                </button>
+            </div>
+
             <div className="waiting-container">
                 <div className="main-column">
+                    <img src={logo} alt="Kaput Logo" className="waiting-logo" />
                     <div className="lobby-info">
                         <p className="lobby-meta">Lobby ID: <strong>{lobbyId}</strong></p>
                         <p className="lobby-meta">Lobby State: <strong>{lobbyState}</strong></p>
