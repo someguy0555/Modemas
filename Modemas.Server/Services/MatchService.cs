@@ -1,39 +1,39 @@
-using Microsoft.AspNetCore.SignalR;
-using Modemas.Server.Models;
 using System.Text.Json;
+using Modemas.Server.Models;
+using Modemas.Server.Interfaces;
 
 namespace Modemas.Server.Services;
 
 /// <summary>
 /// Handles match logic, including sending questions, timing, and ending matches.
 /// </summary>
-public class MatchService
+public class MatchService : IMatchService
 {
-    private readonly LobbyStore _store;
+    private readonly ILobbyStore _store;
+    private readonly ILobbyNotifier _notifier;
 
-    public MatchService(LobbyStore store)
+    public MatchService(ILobbyStore store, ILobbyNotifier notifier)
     {
         _store = store;
+        _notifier = notifier;
     }
 
     /// <summary>
     /// Starts a match for the given lobby.
     /// </summary>
-    public async Task StartMatch(IHubCallerClients clients, string lobbyId)
+    public async Task StartMatch(string lobbyId)
     {
         var lobby = _store.Get(lobbyId);
-        if (lobby == null || lobby.State == LobbyState.Started)
+        if (lobby == null || lobby.State == LobbyState.Started) 
             return;
 
         var questions = lobby.Match?.Questions ?? new List<Question>();
-        if (questions.Count == 0)
+        if (!questions.Any())
         {
-            Console.WriteLine($"StartMatch: no questions available for lobby {lobbyId}. Aborting.");
-            await clients.Group(lobbyId).SendAsync("MatchStartFailed", lobbyId, "No questions available.");
+            await _notifier.NotifyGroup(lobbyId, "MatchStartFailed", lobbyId, "No questions available.");
             return;
         }
 
-        // lobby.Match is a potentially null value, fix later
         lobby.Match.CurrentQuestionIndex = 0;
         lobby.State = LobbyState.Started;
 
@@ -43,54 +43,40 @@ public class MatchService
             p.QuestionScores.Clear();
         }
 
-        Console.WriteLine($"Match started in lobby {lobbyId}");
-        await clients.Group(lobbyId).SendAsync("LobbyMatchStarted", lobbyId);
+        await _notifier.NotifyGroup(lobbyId, "LobbyMatchStarted", lobbyId);
 
-        _ = RunMatchLoop(clients, lobby);
+        _ = RunMatchLoop(lobby);
     }
 
-    /// <summary>
-    /// Sends each question and waits for answers.
-    /// </summary>
-    private async Task RunMatchLoop(IHubCallerClients clients, Lobby lobby)
+    private async Task RunMatchLoop(Lobby lobby)
     {
-        Console.WriteLine($"[RunMatchLoop] Starting match for lobby {lobby.LobbyId}. Total questions: {lobby.Match.Questions.Count}");
-
         while (lobby.Match.CurrentQuestionIndex < lobby.Match.Questions.Count)
         {
-            Console.WriteLine($"[RunMatchLoop] Match loop next iteration start.");
             var question = lobby.Match.Questions[lobby.Match.CurrentQuestionIndex];
-            Console.WriteLine($"[RunMatchLoop] Preparing question {lobby.Match.CurrentQuestionIndex} ({question.Type}) for lobby {lobby.LobbyId}");
 
             // Reset HasAnsweredCurrent for all players
             foreach (var player in lobby.Players)
-            {
                 player.HasAnsweredCurrent = false;
-                Console.WriteLine($"[RunMatchLoop] Reset HasAnsweredCurrent for player {player.Name}");
-            }
 
-            // int duration = lobby.LobbySettings.QuestionTimerInSeconds > 0
-            //                ? lobby.LobbySettings.QuestionTimerInSeconds
-            //                : question.TimeLimit;
             int duration = question.TimeLimit;
 
-            Console.WriteLine($"[RunMatchLoop] Sending question {lobby.Match.CurrentQuestionIndex} to lobby {lobby.LobbyId}: \"{question.Text}\" with timer {duration}s");
-            await clients.Group(lobby.LobbyId).SendAsync("NewQuestion", question);
+            // Console.WriteLine($"Original: {question}");
+            // Console.WriteLine($"Original: {question.TimeLimit}");
+            // Console.WriteLine($"Original: {question.Text}");
+            // Console.WriteLine($"Original: {question.Points}");
+            // Console.WriteLine($"Original: {question.Type}");
+            await _notifier.NotifyGroup(lobby.LobbyId, "NewQuestion", question);
 
-            Console.WriteLine($"[RunMatchLoop] Waiting {duration}s for answers...");
+            // Wait for answers
             await Task.Delay(duration * 1000);
 
-            Console.WriteLine($"[RunMatchLoop] Timeout reached for question {lobby.Match.CurrentQuestionIndex} in lobby {lobby.LobbyId}");
-            await clients.Group(lobby.LobbyId).SendAsync("QuestionTimeout", $"Timeout for question {lobby.Match.CurrentQuestionIndex}");
-            Console.WriteLine($"[RunMatchLoop] Match loop next iteration anwsered question.");
+            await _notifier.NotifyGroup(lobby.LobbyId, "QuestionTimeout", $"Timeout for question {lobby.Match.CurrentQuestionIndex}");
 
             lobby.Match.CurrentQuestionIndex++;
-            Console.WriteLine($"[RunMatchLoop] Match loop next iteration end.");
         }
 
-        Console.WriteLine($"[RunMatchLoop] Match complete for lobby {lobby.LobbyId}. Notifying clients...");
+        // Match ended
         lobby.State = LobbyState.Waiting;
-
         int matchEndDurationInSeconds = 10;
         var playerResults = lobby.Players
             .Select(p => new
@@ -101,43 +87,37 @@ public class MatchService
             })
             .ToList();
 
-        await clients.Group(lobby.LobbyId).SendAsync("MatchEndStarted", lobby.LobbyId, matchEndDurationInSeconds, playerResults);
+        await _notifier.NotifyGroup(lobby.LobbyId, "MatchEndStarted", lobby.LobbyId, matchEndDurationInSeconds, playerResults);
         await Task.Delay(matchEndDurationInSeconds * 1000);
-        await clients.Group(lobby.LobbyId).SendAsync("MatchEndEnded", lobby.LobbyId);
-
-        Console.WriteLine($"[RunMatchLoop] Match ended in lobby {lobby.LobbyId}");
+        await _notifier.NotifyGroup(lobby.LobbyId, "MatchEndEnded");
     }
 
-    public async Task AnswerQuestion(HubCallerContext context, IHubCallerClients clients, string lobbyId, object answer)
+    public async Task AnswerQuestion(string connectionId, string lobbyId, object answer)
     {
         var lobby = _store.Get(lobbyId);
-        if (lobby == null)
+        if (lobby == null) 
         {
-            Console.WriteLine($"AnswerQuestion: Lobby {lobbyId} not found for connection {context.ConnectionId}");
-            await clients.Caller.SendAsync("Error", "Lobby not found");
+            await _notifier.NotifyClient(connectionId, "Error", "Lobby not found");
             return;
         }
 
-        var player = lobby.Players.FirstOrDefault(p => p.ConnectionId == context.ConnectionId);
-        if (player == null)
+        var player = lobby.Players.FirstOrDefault(p => p.ConnectionId == connectionId);
+        if (player == null) 
         {
-            Console.WriteLine($"AnswerQuestion: Player not found in lobby {lobbyId} (Connection {context.ConnectionId})");
-            await clients.Caller.SendAsync("Error", "You are not in this lobby");
+            await _notifier.NotifyClient(connectionId, "Error", "You are not in this lobby");
             return;
         }
 
         var question = lobby.Match.Questions.ElementAtOrDefault(lobby.Match.CurrentQuestionIndex);
-        if (question == null)
+        if (question == null) 
         {
-            Console.WriteLine($"AnswerQuestion: No active question in lobby {lobbyId}");
-            await clients.Caller.SendAsync("Error", "No active question");
+            await _notifier.NotifyClient(connectionId, "Error", "No active question");
             return;
         }
 
         if (player.HasAnsweredCurrent)
         {
-            Console.WriteLine($"AnswerQuestion: Player {player.Name} already answered question {lobby.Match.CurrentQuestionIndex} in lobby {lobbyId}");
-            await clients.Caller.SendAsync("Error", "You already answered this question");
+            await _notifier.NotifyClient(connectionId, "Error", "You already answered this question");
             return;
         }
 
@@ -172,22 +152,58 @@ public class MatchService
 
             var entry = new ScoreEntry(lobby.Match.CurrentQuestionIndex, points, isCorrect);
             player.QuestionScores.Add(entry);
-
             player.HasAnsweredCurrent = true;
 
-            await clients.Caller.SendAsync("AnswerAccepted", entry);
-            Console.WriteLine($"Player {player.Name} answered question {lobby.Match.CurrentQuestionIndex} in lobby {lobbyId} earning {points} points. Correct: {isCorrect}");
+            await _notifier.NotifyClient(connectionId, "AnswerAccepted", entry);
+
+            // Bit scuffecd, but if all player have accepted the anwser, next question.
+            // bool allAnswered = lobby.Players.All(p => p.HasAnsweredCurrent);
+            //
+            // if (allAnswered)
+            // {
+            //     lobby.Match.CurrentQuestionIndex++;
+            //
+            //     if (lobby.Match.CurrentQuestionIndex < lobby.Match.Questions.Count)
+            //     {
+            //         foreach (var p in lobby.Players)
+            //             p.HasAnsweredCurrent = false;
+            //
+            //         var nextQuestion = lobby.Match.Questions[lobby.Match.CurrentQuestionIndex];
+            //         await _notifier.NotifyGroup(lobbyId, "NewQuestion", nextQuestion);
+            //         Console.WriteLine($"Lobby {lobbyId}: moved to next question {lobby.Match.CurrentQuestionIndex + 1}/{lobby.Match.Questions.Count}");
+            //     }
+            //     else
+            //     {
+            //         var playerResults = lobby.Players
+            //             .Select(p => new
+            //             {
+            //                 p.Name,
+            //                 TotalPoints = p.QuestionScores.Sum(s => s.Points)
+            //             })
+            //             .OrderByDescending(p => p.TotalPoints)
+            //             .ToList();
+            //
+            //         const int matchEndDuration = 10; // seconds to display results
+            //         await _notifier.NotifyGroup(lobbyId, "MatchEndStarted", lobbyId, matchEndDuration, playerResults);
+            //
+            //         _ = Task.Run(async () =>
+            //         {
+            //             await Task.Delay(matchEndDuration * 1000);
+            //             lobby.Match.CurrentQuestionIndex = 0;
+            //             lobby.Players.ForEach(p => { p.QuestionScores.Clear(); p.HasAnsweredCurrent = false; });
+            //             await _notifier.NotifyGroup(lobbyId, "MatchEndEnded", lobbyId);
+            //             Console.WriteLine($"Lobby {lobbyId}: match ended and reset.");
+            //         });
+            //     }
+            // }
         }
         catch (ArgumentException ex)
         {
-            Console.WriteLine($"AnswerQuestion: Invalid answer from player {player.Name} in lobby {lobbyId}. Exception: {ex.Message}");
-            await clients.Caller.SendAsync("Error", ex.Message);
+            await _notifier.NotifyClient(connectionId, "Error", ex.Message);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"AnswerQuestion: Unexpected error for player {player.Name} in lobby {lobbyId}. Exception: {ex.Message}");
-            await clients.Caller.SendAsync("Error", "An unexpected error occurred while processing your answer.");
+            await _notifier.NotifyClient(connectionId, "Error", "An unexpected error occurred while processing your answer.");
         }
     }
-
 }

@@ -104,6 +104,10 @@ export default function MatchView({ connection, lobbyId, question, answered, set
                     </button>
                 </div>
             )}
+
+            {question === null && (
+                <div>The question is null for whatever reason</div>
+            )}
         </div>
     );
 }
