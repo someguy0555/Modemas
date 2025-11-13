@@ -54,20 +54,13 @@ public class MatchService : IMatchService
         {
             var question = lobby.Match.Questions[lobby.Match.CurrentQuestionIndex];
 
-            // Reset HasAnsweredCurrent for all players
             foreach (var player in lobby.Players)
                 player.HasAnsweredCurrent = false;
 
             int duration = question.TimeLimit;
 
-            // Console.WriteLine($"Original: {question}");
-            // Console.WriteLine($"Original: {question.TimeLimit}");
-            // Console.WriteLine($"Original: {question.Text}");
-            // Console.WriteLine($"Original: {question.Points}");
-            // Console.WriteLine($"Original: {question.Type}");
             await _notifier.NotifyGroup(lobby.LobbyId, "NewQuestion", question);
 
-            // Wait for answers
             await Task.Delay(duration * 1000);
 
             await _notifier.NotifyGroup(lobby.LobbyId, "QuestionTimeout", $"Timeout for question {lobby.Match.CurrentQuestionIndex}");
@@ -156,46 +149,6 @@ public class MatchService : IMatchService
 
             await _notifier.NotifyClient(connectionId, "AnswerAccepted", entry);
 
-            // Bit scuffecd, but if all player have accepted the anwser, next question.
-            // bool allAnswered = lobby.Players.All(p => p.HasAnsweredCurrent);
-            //
-            // if (allAnswered)
-            // {
-            //     lobby.Match.CurrentQuestionIndex++;
-            //
-            //     if (lobby.Match.CurrentQuestionIndex < lobby.Match.Questions.Count)
-            //     {
-            //         foreach (var p in lobby.Players)
-            //             p.HasAnsweredCurrent = false;
-            //
-            //         var nextQuestion = lobby.Match.Questions[lobby.Match.CurrentQuestionIndex];
-            //         await _notifier.NotifyGroup(lobbyId, "NewQuestion", nextQuestion);
-            //         Console.WriteLine($"Lobby {lobbyId}: moved to next question {lobby.Match.CurrentQuestionIndex + 1}/{lobby.Match.Questions.Count}");
-            //     }
-            //     else
-            //     {
-            //         var playerResults = lobby.Players
-            //             .Select(p => new
-            //             {
-            //                 p.Name,
-            //                 TotalPoints = p.QuestionScores.Sum(s => s.Points)
-            //             })
-            //             .OrderByDescending(p => p.TotalPoints)
-            //             .ToList();
-            //
-            //         const int matchEndDuration = 10; // seconds to display results
-            //         await _notifier.NotifyGroup(lobbyId, "MatchEndStarted", lobbyId, matchEndDuration, playerResults);
-            //
-            //         _ = Task.Run(async () =>
-            //         {
-            //             await Task.Delay(matchEndDuration * 1000);
-            //             lobby.Match.CurrentQuestionIndex = 0;
-            //             lobby.Players.ForEach(p => { p.QuestionScores.Clear(); p.HasAnsweredCurrent = false; });
-            //             await _notifier.NotifyGroup(lobbyId, "MatchEndEnded", lobbyId);
-            //             Console.WriteLine($"Lobby {lobbyId}: match ended and reset.");
-            //         });
-            //     }
-            // }
         }
         catch (ArgumentException ex)
         {
