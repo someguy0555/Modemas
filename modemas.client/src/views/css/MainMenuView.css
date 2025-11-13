@@ -1,0 +1,112 @@
+.main-menu-view {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.main-menu-view .header h2 {
+    margin: 0 0 0.75rem;
+}
+
+.main-menu-view .header { text-align: center; }
+
+.main-menu-logo {
+    display: block;
+    margin: -15rem auto 0.5rem;
+    max-height: 360px;
+    width: auto;
+}
+
+.main-menu-view .main-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.main-menu-view .actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.main-menu-view input[type="text"],
+.main-menu-view .settings-input {
+    width: 100%;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background-color: var(--input-bg, #fff);
+    color: var(--text-color, #222);
+    transition: border-color .2s ease, box-shadow .2s ease;
+    box-sizing: border-box;
+}
+.main-menu-view input[type="text"]:focus,
+.main-menu-view .settings-input:focus {
+    outline: none;
+    border-color: var(--accent, #2f80ed);
+    box-shadow: 0 0 0 3px rgba(47,128,237,0.25);
+}
+
+.main-menu-view .btn {
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.main-menu-view .actions .btn {
+    flex: 1 1 auto;
+    min-width: 140px;
+}
+
+.main-menu-view .btn-primary {
+    background-color: var(--btn-primary-bg, #2f80ed);
+    color: var(--btn-primary-color, #fff);
+}
+
+.main-menu-view .btn-secondary {
+    background-color: var(--btn-secondary-bg, #f1f3f5);
+    color: var(--btn-secondary-color, #222);
+}
+
+.main-menu-view .server-stats {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color, #e5e7eb);
+    background: var(--panel-bg, #fff);
+    color: var(--text-color, #222);
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+
+    position: fixed;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    width: min(320px, 32vw);
+    max-height: 70vh;
+    overflow: auto;
+    z-index: 1000;
+}
+
+.main-menu-view .server-stats h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+}
+
+.main-menu-view .server-stats p {
+    margin: 0.25rem 0;
+}
+
+@media (max-width: 768px) {
+    .main-menu-view .server-stats {
+        position: static;
+        transform: none;
+        width: 100%;
+        max-height: none;
+        overflow: visible;
+        margin-top: 1rem;
+    }
+}
