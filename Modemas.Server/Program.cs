@@ -40,7 +40,7 @@ builder.Services.AddSingleton<IQuestionParser, QuestionParser>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<ILobbyService, LobbyService>();
 builder.Services.AddScoped<IQuestionGenerationService, QuestionGenerationService>();
-builder.Services.AddScoped<IQuestionRepository, JsonQuestionRepository>();
+builder.Services.AddScoped<IQuestionRepository, EfQuestionRepository>();
 builder.Services.AddScoped<ILobbyNotifier, LobbyNotifier>(sp =>
 {
     var hubContext = sp.GetRequiredService<IHubContext<LobbyHub>>();

@@ -201,6 +201,93 @@ public class LobbyServiceTests
     }
 
     [Fact]
+    public async Task StartVoting_LobbyIsNull_DoesNothing()
+    {
+        string lobbyId = "lobby1";
+
+        _managerMock.Setup(m => m.GetLobby(lobbyId)).Returns((Lobby?)null);
+
+        await _service.StartVoting(lobbyId);
+
+        _notifierMock.Verify(n => n.NotifyGroup(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object[]>()), Times.Never);
+        _matchServiceMock.Verify(m => m.StartMatch(It.IsAny<string>()), Times.Never);
+    }
+
+    // ================================================================================
+    // TODO: Fix this later!
+    // ================================================================================
+    [Fact]
+    public async Task StartVoting_QuestionsUnavailable_SendsFailureAndDoesNotStartMatch()
+    {
+        string lobbyId = "lobby1";
+        var fakeLobby = new Lobby
+        {
+            LobbyId = lobbyId,
+            LobbySettings = new LobbySettings { Topic = "Space", NumberOfQuestions = 2 }
+        };
+
+        _managerMock.Setup(m => m.GetLobby(lobbyId)).Returns(fakeLobby);
+
+        _repoMock.Setup(r => r.GetByTopicAsync("Space"))
+            .ReturnsAsync(new List<Question>());
+
+        _questionServiceMock.Setup(q => q.GenerateQuestionsAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .ReturnsAsync(new List<Question>());
+
+        _notifierMock.Setup(n => n.NotifyGroup(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object[]>()))
+            .Returns(Task.CompletedTask);
+
+        await _service.StartVoting(lobbyId);
+
+        _notifierMock.Verify(n => n.NotifyGroup(lobbyId, "MatchStartFailed", lobbyId, "Questions unavailable"), Times.Once);
+        _matchServiceMock.Verify(m => m.StartMatch(It.IsAny<string>()), Times.Never);
+    }
+
+    // ================================================================================
+    // TODO: Seriously, I don't think this is how this is supposed to work.
+    // ================================================================================
+    [Fact]
+    public async Task StartVoting_QuestionsAvailable_StartsMatchSuccessfully()
+    {
+        string lobbyId = "lobby1";
+        string topic = "Space";
+
+        var fakeLobby = new Lobby
+        {
+            LobbyId = lobbyId,
+            LobbySettings = new LobbySettings
+            {
+                Topic = topic,
+                NumberOfQuestions = 3
+            }
+        };
+
+        _managerMock.Setup(m => m.GetLobby(lobbyId)).Returns(fakeLobby);
+        _repoMock.Setup(r => r.GetByTopicAsync(topic))
+            .ReturnsAsync(new List<Question>());
+        var generatedQuestions = new List<Question>
+        {
+            new MultipleChoiceQuestion { Text = "What is Mars?" }
+        };
+
+        _questionServiceMock.Setup(q => q.GenerateQuestionsAsync(3, topic))
+            .ReturnsAsync(generatedQuestions);
+        _repoMock.Setup(r => r.SaveAsync(topic, generatedQuestions))
+            .Returns(Task.CompletedTask);
+        _notifierMock.Setup(n => n.NotifyGroup(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object[]>()))
+            .Returns(Task.CompletedTask);
+
+        await _service.StartVoting(lobbyId);
+
+        _notifierMock.Verify(n => n.NotifyGroup(lobbyId, "VotingStarted", lobbyId, 0), Times.Once);
+        _notifierMock.Verify(n => n.NotifyGroup(lobbyId, "VotingEnded", lobbyId), Times.Once);
+        _notifierMock.Verify(n => n.NotifyGroup(lobbyId, "MatchStartFailed", lobbyId, "Questions unavailable"), Times.Never);
+
+        _matchServiceMock.Verify(m => m.StartMatch(lobbyId), Times.Once);
+        _repoMock.Verify(r => r.SaveAsync(topic, generatedQuestions), Times.Once);
+    }
+
+    [Fact]
     public async Task HandleDisconnect_HostClosesLobby()
     {
         string lobbyId = "lobby1";
