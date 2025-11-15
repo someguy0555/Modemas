@@ -117,28 +117,30 @@ public class MatchService : IMatchService
         try
         {
             if (answer is JsonElement json)
-            {
-                switch (question.Type)
-                {
-                    case QuestionType.MultipleChoice:
-                        if (json.ValueKind == JsonValueKind.Number && json.TryGetInt32(out var intVal))
-                            answer = intVal;
-                        break;
-
-                    case QuestionType.MultipleAnswer:
-                        if (json.ValueKind == JsonValueKind.Array)
-                            answer = json.EnumerateArray()
-                                         .Where(e => e.ValueKind == JsonValueKind.Number)
-                                         .Select(e => e.GetInt32())
-                                         .ToList();
-                        break;
-
-                    case QuestionType.TrueFalse:
-                        if (json.ValueKind == JsonValueKind.True || json.ValueKind == JsonValueKind.False)
-                            answer = json.GetBoolean();
-                        break;
-                }
-            }
+                answer = question.ParseAnswer((JsonElement) answer);
+            // if (answer is JsonElement json)
+            // {
+            //     switch (question.Type)
+            //     {
+            //         case QuestionType.MultipleChoice:
+            //             if (json.ValueKind == JsonValueKind.Number && json.TryGetInt32(out var intVal))
+            //                 answer = intVal;
+            //             break;
+            //
+            //         case QuestionType.MultipleAnswer:
+            //             if (json.ValueKind == JsonValueKind.Array)
+            //                 answer = json.EnumerateArray()
+            //                              .Where(e => e.ValueKind == JsonValueKind.Number)
+            //                              .Select(e => e.GetInt32())
+            //                              .ToList();
+            //             break;
+            //
+            //         case QuestionType.TrueFalse:
+            //             if (json.ValueKind == JsonValueKind.True || json.ValueKind == JsonValueKind.False)
+            //                 answer = json.GetBoolean();
+            //             break;
+            //     }
+            // }
 
             int points = question.IsCorrect(answer);
             bool isCorrect = points > 0;

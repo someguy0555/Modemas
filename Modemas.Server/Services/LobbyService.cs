@@ -148,9 +148,11 @@ public class LobbyService : ILobbyService
         try
         {
             var questions = await _questionGenerationService.GenerateQuestionsAsync(count, topic);
+            Console.WriteLine("Questions were generated or something.", questions);
             if (!questions.Any()) return false;
 
             await _repo.SaveAsync(topic, questions);
+            Console.WriteLine("Saved questions");
             lobby.Match ??= new LobbyMatch();
             lobby.Match.Questions = questions;
             return true;

@@ -14,6 +14,7 @@ public class QuestionGenerationService : IQuestionGenerationService
         _http = http;
         _parser = parser;
         _repo = repo;
+        Console.WriteLine($"http timeout: {http.Timeout}");
     }
 
     /// <summary>
@@ -44,13 +45,17 @@ public class QuestionGenerationService : IQuestionGenerationService
             prompt = $"Generate {count} Kahoot-style questions about {topic}. Output valid JSON only."
         };
 
+        Console.WriteLine($"pre-response: {payload}");
         var response = await _http.PostAsJsonAsync("http://localhost:11435/api/generate", payload);
-
         response.EnsureSuccessStatusCode();
+
         string content = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Response content: {content}");
 
         var questions = _parser.Parse(content);
+        Console.WriteLine($"Parsed {questions.Count} questions successfully.");
 
+        Console.WriteLine($"questions: {questions}");
         return questions.ToList();
     }
 }
