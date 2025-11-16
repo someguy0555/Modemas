@@ -147,14 +147,20 @@ public class LobbyService : ILobbyService
         // Generate new questions
         try
         {
-            var questions = await _questionGenerationService.GenerateQuestionsAsync(count, topic);
+            var questions = await _questionGenerationService.GetOrGenerateQuestionsAsync(count, topic);
             Console.WriteLine("Questions were generated or something.", questions);
             if (!questions.Any()) return false;
 
             await _repo.SaveAsync(topic, questions);
             Console.WriteLine("Saved questions");
+
             lobby.Match ??= new LobbyMatch();
-            lobby.Match.Questions = questions;
+            lobby.Match.Questions = questions.ToList();
+            Console.WriteLine("Saved questions end: " + lobby.Match.Questions.ToString());
+            foreach (var q in lobby.Match.Questions)
+            {
+                Console.WriteLine("Questions: " + q.Text);
+            }
             return true;
         }
         catch
