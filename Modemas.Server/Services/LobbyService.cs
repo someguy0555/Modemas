@@ -85,9 +85,29 @@ public class LobbyService : ILobbyService
             await _notifier.NotifyError(connectionId, "Only the host can update settings");
             return;
         }
+        
+        var safeNumber = Math.Max(1, settings.NumberOfQuestions);
+        var safeTimer = Math.Max(1, settings.QuestionTimerInSeconds);
+        var safeTopic = (settings.Topic ?? "").Trim();
 
-        _manager.UpdateSettings(lobby, settings);
-        await _notifier.NotifyLobbySettingsUpdated(lobbyId, settings);
+        var sanitized = new LobbySettings(safeNumber, safeTimer, safeTopic);
+        
+        _manager.UpdateSettings(lobby, sanitized);
+        
+        lobby.LobbySettings = sanitized;
+        
+        try
+        {
+            await EnsureMatchQuestionsAsync(lobby);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error while adjusting match questions for lobby {lobbyId}: {ex}");
+            await _notifier.NotifyError(connectionId, "Failed to apply settings to current questions.");
+        }
+        
+
+        await _notifier.NotifyLobbySettingsUpdated(lobbyId, sanitized);
         Console.WriteLine($"Settings updated for lobby {lobbyId}");
     }
 
@@ -140,7 +160,9 @@ public class LobbyService : ILobbyService
         if (existing.Any())
         {
             lobby.Match ??= new LobbyMatch();
-            lobby.Match.Questions = existing;
+            lobby.Match.Questions = existing.ToList();
+            
+            await EnsureMatchQuestionsAsync(lobby);
             return true;
         }
 
@@ -149,10 +171,12 @@ public class LobbyService : ILobbyService
         {
             var questions = await _questionGenerationService.GenerateQuestionsAsync(count, topic);
             if (!questions.Any()) return false;
-
+            
             await _repo.SaveAsync(topic, questions);
             lobby.Match ??= new LobbyMatch();
-            lobby.Match.Questions = questions;
+            lobby.Match.Questions = questions.ToList();
+            
+            await EnsureMatchQuestionsAsync(lobby);
             return true;
         }
         catch
@@ -213,5 +237,59 @@ public class LobbyService : ILobbyService
             await _notifier.NotifyGroup(lobby.LobbyId, "LobbyRemovePlayer", disconnectedPlayer.Name);
             Console.WriteLine($"Player {disconnectedPlayer.Name} disconnected from lobby {lobby.LobbyId}");
         }
+    }
+    
+    private async Task EnsureMatchQuestionsAsync(Lobby lobby)
+    {
+        if (lobby == null || lobby.LobbySettings == null || string.IsNullOrWhiteSpace(lobby.LobbySettings.Topic))
+            return;
+
+        lobby.Match ??= new LobbyMatch();
+
+        var topic = lobby.LobbySettings.Topic.Trim();
+        var desiredCount = Math.Max(1, lobby.LobbySettings.NumberOfQuestions);
+        var desiredTime = Math.Max(1, lobby.LobbySettings.QuestionTimerInSeconds);
+
+        var current = lobby.Match.Questions ?? new List<Question>();
+        
+        if (current.Count > desiredCount)
+        {
+            lobby.Match.Questions = current.Take(desiredCount).ToList();
+            current = lobby.Match.Questions;
+        }
+        
+        if (current.Count < desiredCount)
+        {
+            var missing = desiredCount - current.Count;
+            var generated = new List<Question>();
+            try
+            {
+                generated = (await _questionGenerationService.GenerateQuestionsAsync(missing, topic)).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to generate additional questions for topic '{topic}': {ex}");
+            }
+
+            if (generated.Any())
+            {
+                current.AddRange(generated);
+                try
+                {
+                    await _repo.SaveAsync(topic, current);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to save questions for topic '{topic}': {ex}");
+                }
+            }
+        }
+        
+        foreach (var q in current)
+        {
+            q.TimeLimit = desiredTime;
+        }
+        
+        lobby.Match.Questions = current;
     }
 }
