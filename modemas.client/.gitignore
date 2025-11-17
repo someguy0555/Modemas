@@ -27,3 +27,6 @@ dist-ssr
 node_modules/
 obj/
 obj\\Debug/
+
+# Custom
+coverage/
