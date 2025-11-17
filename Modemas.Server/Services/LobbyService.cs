@@ -64,7 +64,20 @@ public class LobbyService : ILobbyService
         }
 
         await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
+        
+        var playerNames = lobby.Players.Select(p => p.Name).ToList();
+        await _notifier.NotifyClient(connectionId, "LobbyJoined", lobby.LobbyId, playerName, playerNames, lobby.State.ToString());
+        
+        var settingsPayload = new
+        {
+            numberOfQuestions = lobby.LobbySettings.NumberOfQuestions,
+            questionTimerInSeconds = lobby.LobbySettings.QuestionTimerInSeconds,
+            topic = lobby.LobbySettings.Topic
+        };
+        await _notifier.NotifyClient(connectionId, "LobbySettingsUpdated", settingsPayload);
+        
         await _notifier.NotifyPlayerJoined(lobby.LobbyId, playerName);
+
         Console.WriteLine($"Player {playerName} joined lobby {lobbyId}");
     }
 
