@@ -32,23 +32,30 @@
 
 .waiting-container {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr;
     gap: 1.25rem;
     width: 100%;
     max-width: 1100px;
     align-items: start;
+    box-sizing: border-box;
 }
 
 .main-column {
-    margin-right: 0.75rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    margin: 0 auto;
+    max-width: min(700px, calc(100vw - min(340px, 34vw) - 2rem));
+    width: 100%;
 }
 
 .players-column {
+    position: fixed;
+    top: 40%;
+    right: 1rem;
+    transform: translateY(-50%);
+    width: min(320px, 32vw);
     text-align: left;
-    margin-left: 0.5rem;
 }
 
 .lobby-info {
@@ -111,6 +118,18 @@
     color: var(--text-color);
 }
 
+.waiting-view .host-controls .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.waiting-view .host-controls .actions .btn {
+    width: 100%;
+    justify-content: center;
+}
+
 .actions {
     display: flex;
     gap: 0.5rem;
@@ -141,20 +160,42 @@
     padding: 0.35rem 0.6rem;
 }
 
+.leave-button-fixed {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 1001;
+}
+
+.waiting-logo {
+    display: block;
+    margin: -10rem auto -4rem;
+    max-height: 360px;
+    width: auto;
+}
+
+@media (max-width: 800px) {
+    .waiting-logo {
+        max-height: 80px;
+        margin-bottom: 0.5rem;
+    }
+}
+
 @media (max-width: 800px) {
     .waiting-container {
         grid-template-columns: 1fr;
     }
 
-    .main-column {
-        order: 1;
-    }
-
     .players-column {
-        order: 2;
+        position: static;
+        transform: none;
+        width: 100%;
+        right: auto;
+        top: auto;
+        margin-left: 0.5rem;
     }
 
-    .host-controls {
-        order: 0;
+    .main-column {
+        max-width: 100%;
     }
 }

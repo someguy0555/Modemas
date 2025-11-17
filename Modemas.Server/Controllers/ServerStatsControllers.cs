@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using Modemas.Server.Models;
-using Modemas.Server.Services;
+using Modemas.Server.Interfaces;
 
 namespace Modemas.Server.Controllers;
 
@@ -9,9 +9,9 @@ namespace Modemas.Server.Controllers;
 [Route("api/[controller]")]
 public class ServerStatsController : ControllerBase
 {
-    private readonly LobbyStore _lobbyStore;
+    private readonly ILobbyStore _lobbyStore;
 
-    public ServerStatsController(LobbyStore lobbyStore)
+    public ServerStatsController(ILobbyStore lobbyStore)
     {
         _lobbyStore = lobbyStore;
     }

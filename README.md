@@ -56,3 +56,8 @@ The project consists of two parts:
     dotnet run
     ```
     This command starts both the backend and the frontend.
+
+## Report reading
+```
+dotnet tool run reportgenerator   -reports:"./Modemas.Tests/TestResults/56c454a6-3657-402f-9416-b4b01a887a72/coverage.cobertura.xml"   -targetdir:"./CoverageReport"   -reporttypes:Html
+```

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import "./css/MainMenuView.css";
+import logo from "../assets/logo.svg";
 
 /**
  * View for creating a new lobby or joining an existing one.
@@ -55,51 +57,56 @@ export default function MainMenuView({ connection, setGlobalPlayerName, setGloba
     }, []);
 
     return (
-        <div>
-            <h2>Main Menu</h2>
-
-            {/* Player Name Input */}
-            <input
-                type="text"
-                placeholder="Enter your name"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-            />
-            <br />
-
-            {/* Lobby ID Input */}
-            <input
-                type="text"
-                placeholder="Enter Lobby ID"
-                value={lobbyId}
-                onChange={(e) => setLobbyId(e.target.value)}
-            />
-            <br />
-
-            {/* Buttons */}
-            <button
-                onClick={() => {
-                    setGlobalPlayerName(playerName);
-                    console.log(`Creating lobby as ${playerName}.`);
-                    createLobby(playerName);
-                }}
-            >
-                Create Lobby
-            </button>
-            <button
-                onClick={() => {
-                    setGlobalPlayerName(playerName);
-                    setGlobalLobbyId(lobbyId);
-                    console.log(`Joining lobby ${lobbyId} as ${playerName}.`);
-                    joinLobby(lobbyId, playerName);
-                }}
-            >
-                Join Lobby
-            </button>
-
+        <div className="main-menu-view">
+            <div className="header">
+                <img src={logo} alt="Kaput Logo" className="main-menu-logo" />
+                <h2 style={{ margin: 0 }}>Main Menu</h2>
+            </div>
+            <div className="main-column">
+                {/* Player Name Input */}
+                <input
+                    className="settings-input"
+                    type="text"
+                    placeholder="Enter your name"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                />
+                {/* Lobby ID Input */}
+                <input
+                    className="settings-input"
+                    type="text"
+                    placeholder="Enter Lobby ID"
+                    value={lobbyId}
+                    onChange={(e) => setLobbyId(e.target.value)}
+                />
+                {/* Buttons */}
+                <div className="actions">
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                            setGlobalPlayerName(playerName);
+                            console.log(`Creating lobby as ${playerName}.`);
+                            createLobby(playerName);
+                        }}
+                    >
+                        Create Lobby
+                    </button>
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => {
+                            setGlobalPlayerName(playerName);
+                            setGlobalLobbyId(lobbyId);
+                            console.log(`Joining lobby ${lobbyId} as ${playerName}.`);
+                            joinLobby(lobbyId, playerName);
+                        }}
+                    >
+                        Join Lobby
+                    </button>
+                </div>
+            </div>
             {/* Server Stats Display */}
             {serverStats && (
-                <div style={{ marginTop: "20px" }}>
+                <div className="server-stats">
                     <h3>Server Stats</h3>
                     <p>Total Lobbies: {serverStats.totalLobbies}</p>
                     <p>Active Lobbies: {serverStats.activeLobbies}</p>

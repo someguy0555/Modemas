@@ -3,7 +3,7 @@ using Modemas.Server.Interfaces;
 
 namespace Modemas.Server.Services;
 
-public class QuestionGenerationService
+public class QuestionGenerationService : IQuestionGenerationService
 {
     private readonly HttpClient _http;
     private readonly IQuestionParser _parser;

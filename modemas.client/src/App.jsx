@@ -53,44 +53,39 @@ function App() {
             setLobbyId(localLobbyId);
             setLobbyState("Waiting");
             setIsHost(true);
-            console.log(`Lobby ${localLobbyId} (${lobbyId}) (${lobbyState}) was created.`)
+            console.log(`LobbyCreated: localLobbyId = ${localLobbyId}`)
         });
         newConnection.on("LobbyJoined", (localLobbyId, localPlayerName, localPlayers, localLobbyState) => {
+            console.log(`LobbyJoined: localLobbyId = ${localLobbyId}, localPlayerName = ${localPlayerName}, localPlayers = ${localPlayers}, localLobbyState = ${localLobbyState}`)
             setLobbyId(localLobbyId);
             setPlayerName(localPlayerName);
             setPlayers(localPlayers);
             setLobbyState(localLobbyState);
-            console.log(`You joined lobby ${lobbyId}.`)
         });
         newConnection.on("LobbyAddPlayer", (playerName) => {
             setPlayers((prev) => {
                 if (prev.includes(playerName)) return prev;
                 return [...prev, playerName];
             });
-            console.log(`Added player ${playerName} to lobby ${lobbyId}.`);
+            console.log(`LobbyAddPlayer to lobby ${lobbyId}: playerName = ${playerName}`);
         });
         newConnection.on("LobbyRemovePlayer", (removedPlayerName) => {
             setPlayers((prev) => prev.filter(p => p !== removedPlayerName));
-            console.log(`Player ${removedPlayerName} removed from lobby ${lobbyId}.`);
+            console.log(`LobbyRemovePlayer from lobby ${lobbyId}: removedPlayerName = ${removedPlayerName}`);
         });
         newConnection.on("VotingStarted", (localLobbyId) => {
-            // if (lobbyId == localLobbyId) {
+            console.log(`VotingStarted: localLobbyId = ${localLobbyId}`);
             setLobbyState("Voting");
-            console.log(`Voting started in lobby ${lobbyId}.`);
-            // } else console.log(`VotingStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("VotingEnded", (localLobbyId) => {
-            // if (lobbyId == localLobbyId) {
+            console.log(`VotingEnded: localLobbyId = ${localLobbyId}`);
             setLobbyState("Started");
-            // connection.invoke("StartMatch", localLobbyId);
             console.log(`Match started in lobby ${localLobbyId}.`);
-            // } else console.log(`VotingEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("LobbyMatchStarted", (localLobbyId) => {
-            // if (lobbyId == localLobbyId) {
+            console.log(`LobbyMatchStarted: localLobbyId = ${localLobbyId}`);
             setLobbyState("Started");
             console.log(`Match started in lobby ${lobbyId}.`);
-            // } else console.log(`LobbyMatchStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("KickedFromLobby", async (message) => {
             await newConnection.stop();
@@ -103,33 +98,31 @@ function App() {
             await connectToHub();
         });
         newConnection.on("NewQuestion", (question) => {
+            console.log("NewQuestion: question = ", question);
             setQuestion(question);
             setAnswered(false);
             setPoints(null);
-            console.log(`Next question in lobby ${lobbyId}.`);
         });
         newConnection.on("AnswerAccepted", (entry) => {
+            console.log("AnswerAccepted: entry = ", entry);
             setIsCorrect(entry.isCorrect);
             setPoints(entry.points);
         });
         newConnection.on("QuestionTimeout", (QuestionTimeoutMessage) => {
-            console.log(`Timeout in lobby ${lobbyId}: ${QuestionTimeoutMessage}`);
+            console.log(`QuestionTimeout in lobby ${lobbyId}: message = ${QuestionTimeoutMessage}`);
         });
         newConnection.on("MatchEndStarted", (localLobbyId, durationInSeconds, localPlayerResults) => {
-            // if (lobbyId == localLobbyId) {
-            setPlayerResults(localPlayerResults)
+            console.log(`MatchEndStarted: localLobbyId = ${localLobbyId}, duration = ${durationInSeconds}, results = ${localPlayerResults}`);
             setMatchEndDurationInSeconds(durationInSeconds);
+            setPlayerResults(localPlayerResults)
             setLobbyState("Closed");
             setQuestion(null);
-            console.log("Match ended in lobby ${lobbyId}!");
-            // } else console.log(`MatchEndStarted: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("MatchEndEnded", (localLobbyId) => {
-            // if (lobbyId == localLobbyId) {
+            console.log(`MatchEndEnded: localLobbyId = ${localLobbyId}`);
             setLobbyState("Waiting");
-            console.log("Returning to lobby ${lobbyId}.");
+            console.log(`Returning to lobby ${lobbyId}.`);
             setPlayerResults(null);
-            // } else console.log(`MatchEndEnded: Incorrect lobbyId ${localLobbyId} sent to lobby ${lobbyId}`);
         });
         newConnection.on("Error", (errorMsg) => {
             console.log(errorMsg);

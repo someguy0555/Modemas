@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Modemas.Server.Models;
+using Modemas.Server.Interfaces;
 using System.Collections;
 using System.Collections.Concurrent;
 
@@ -9,7 +10,7 @@ namespace Modemas.Server.Services;
 /// Singleton service holding all active lobbies in memory.
 /// Provides thread-safe access to lobby data.
 /// </summary>
-public class LobbyStore : IEnumerable<Lobby>
+public class LobbyStore : ILobbyStore
 {
     private readonly ConcurrentDictionary<string, Lobby> _lobbies = new();
     public IHubCallerClients Clients { get; private set; } = null!;
