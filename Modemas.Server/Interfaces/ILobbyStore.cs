@@ -8,4 +8,5 @@ public interface ILobbyStore : IEnumerable<Lobby>
     Lobby? Get(string lobbyId);
     void Remove(string lobbyId);
     Lobby? FindByConnection(string connectionId);
+    IEnumerable<Lobby> GetAll();
 }

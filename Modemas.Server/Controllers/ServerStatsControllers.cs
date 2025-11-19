@@ -19,9 +19,9 @@ public class ServerStatsController : ControllerBase
     [HttpGet]
     public ActionResult<ServerStats> GetServerStats()
     {
-        var lobbies = _lobbyStore.ToList();
+        var lobbies = _lobbyStore.GetAll().ToList();
 
-        if (lobbies.Count == 0)
+        if (!lobbies.Any())
         {
             return Ok(new ServerStats(
                 TotalLobbies: 0,

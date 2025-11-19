@@ -40,8 +40,29 @@ public class LobbyService : ILobbyService
         // await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
         await _notifier.NotifyLobbyCreated(connectionId, lobby.LobbyId);
 
-        await JoinLobby(connectionId, lobby.LobbyId, hostName);
+        await HostJoinLobby(connectionId, lobby.LobbyId, hostName);
         Console.WriteLine($"Lobby {lobby.LobbyId} created by {hostName}");
+    }
+
+    private async Task HostJoinLobby(string connectionId, string lobbyId, string playerName)
+    {
+        var lobby = _manager.GetLobby(lobbyId);
+        if (lobby == null)
+        {
+            await _notifier.NotifyError(connectionId, "Lobby not found");
+            return;
+        }
+
+        bool added = _manager.AddPlayer(lobby, connectionId, playerName);
+        if (!added)
+        {
+            await _notifier.NotifyError(connectionId, "Name already taken or duplicate connection");
+            return;
+        }
+
+        await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
+        await _notifier.NotifyPlayerJoined(lobby.LobbyId, playerName);
+        Console.WriteLine($"Player {playerName} joined lobby {lobbyId}");
     }
 
     /// <summary>
@@ -65,6 +86,14 @@ public class LobbyService : ILobbyService
 
         await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
         await _notifier.NotifyPlayerJoined(lobby.LobbyId, playerName);
+        await _notifier.NotifyClient(
+            connectionId,
+            "LobbyJoined",
+            lobby.LobbyId,
+            playerName,
+            lobby.Players.Select(p => p.Name),
+            lobby.State
+        );
         Console.WriteLine($"Player {playerName} joined lobby {lobbyId}");
     }
 
@@ -147,12 +176,20 @@ public class LobbyService : ILobbyService
         // Generate new questions
         try
         {
-            var questions = await _questionGenerationService.GenerateQuestionsAsync(count, topic);
+            var questions = await _questionGenerationService.GetOrGenerateQuestionsAsync(count, topic);
+            Console.WriteLine("Questions were generated or something.", questions);
             if (!questions.Any()) return false;
 
             await _repo.SaveAsync(topic, questions);
+            Console.WriteLine("Saved questions");
+
             lobby.Match ??= new LobbyMatch();
-            lobby.Match.Questions = questions;
+            lobby.Match.Questions = questions.ToList();
+            Console.WriteLine("Saved questions end: " + lobby.Match.Questions.ToString());
+            foreach (var q in lobby.Match.Questions)
+            {
+                Console.WriteLine("Questions: " + q.Text);
+            }
             return true;
         }
         catch

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Modemas.Server.Models;
@@ -37,9 +38,33 @@ public abstract class Question
     public QuestionType Type { get; protected set; }
 
     public abstract int IsCorrect(object answer);
+    public abstract object ParseAnswer(JsonElement json);
 }
 
-public class MultipleChoiceQuestion : Question
+public abstract class Question<TAnswer> : Question
+{
+    /// <summary>
+    /// Implemented in derived types to parse the JsonElement into TAnswer.
+    /// </summary>
+    public abstract TAnswer ParseTyped(JsonElement json);
+
+    public override object ParseAnswer(JsonElement json)
+        => ParseTyped(json);
+
+    protected TAnswer EnsureType(object answer)
+    {
+        if (answer is TAnswer t)
+            return t;
+
+        throw new InvalidAnswerFormatException(
+            Type.ToString(),
+            answer,
+            $"Expected answer type {typeof(TAnswer).Name} but received {answer?.GetType().Name ?? "null"}."
+        );
+    }
+}
+
+public class MultipleChoiceQuestion : Question<int>
 {
     [JsonPropertyName("choices")]
     public List<string> Choices { get; init; } = new();
@@ -51,15 +76,26 @@ public class MultipleChoiceQuestion : Question
 
     public MultipleChoiceQuestion() => Type = QuestionType.MultipleChoice;
 
+    public override int ParseTyped(JsonElement json)
+    {
+        if (json.ValueKind == JsonValueKind.Number && json.TryGetInt32(out int value))
+            return value;
+
+        throw new InvalidAnswerFormatException(
+            Type.ToString(),
+            json.ToString(),
+            "Multiple choice answers must be a single integer index."
+        );
+    }
+
     public override int IsCorrect(object answer)
     {
-        if (answer is not int idx)
-            throw new ArgumentException("Answer must be an integer index.");
+        int idx = EnsureType(answer);
         return idx == CorrectAnswerIndex ? Points : 0;
     }
 }
 
-public class MultipleAnswerQuestion : Question
+public class MultipleAnswerQuestion : Question<List<int>>
 {
     [JsonPropertyName("choices")]
     public List<string> Choices { get; init; } = new();
@@ -69,29 +105,71 @@ public class MultipleAnswerQuestion : Question
 
     public MultipleAnswerQuestion() => Type = QuestionType.MultipleAnswer;
 
+    public override List<int> ParseTyped(JsonElement json)
+    {
+        if (json.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidAnswerFormatException(
+                Type.ToString(),
+                json.ToString(),
+                "Multiple answer question requires an array of integers."
+            );
+        }
+
+        try
+        {
+            return json
+                .EnumerateArray()
+                .Where(e => e.ValueKind == JsonValueKind.Number)
+                .Select(e => e.GetInt32())
+                .Distinct()
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidAnswerFormatException(
+                Type.ToString(),
+                json.ToString(),
+                "Failed to parse multiple answer answer array.",
+                ex
+            );
+        }
+    }
+
     public override int IsCorrect(object answer)
     {
-        if (answer is not IEnumerable<int> indices)
-            throw new ArgumentException("Answer must be a collection of indices.");
+        var indices = EnsureType(answer);
 
-        var answers = indices.Distinct().ToList();
-        int correct = answers.Intersect(CorrectAnswerIndices).Count();
+        int correct = indices.Intersect(CorrectAnswerIndices).Count();
 
-        return CorrectAnswerIndices.Count == 0 ? 0 : (correct * Points) / CorrectAnswerIndices.Count;
+        return CorrectAnswerIndices.Count == 0
+            ? 0
+            : (correct * Points) / CorrectAnswerIndices.Count;
     }
 }
 
-public class TrueFalseQuestion : Question
+public class TrueFalseQuestion : Question<bool>
 {
     [JsonPropertyName("correctAnswer")]
     public bool CorrectAnswer { get; init; }
 
     public TrueFalseQuestion() => Type = QuestionType.TrueFalse;
 
+    public override bool ParseTyped(JsonElement json)
+    {
+        if (json.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            return json.GetBoolean();
+
+        throw new InvalidAnswerFormatException(
+            Type.ToString(),
+            json.ToString(),
+            "True/false answer must be a boolean."
+        );
+    }
+
     public override int IsCorrect(object answer)
     {
-        if (answer is not bool b)
-            throw new ArgumentException("Answer must be a boolean.");
+        bool b = EnsureType(answer);
         return b == CorrectAnswer ? Points : 0;
     }
 }

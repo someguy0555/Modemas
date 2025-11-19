@@ -35,8 +35,6 @@ public class QuestionParser : IQuestionParser
 
         try
         {
-            // var questions = JsonSerializer.Deserialize<List<Question>>(jsonArray, new JsonSerializerOptions());
-
             var options = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true

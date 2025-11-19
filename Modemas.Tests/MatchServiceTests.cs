@@ -97,4 +97,135 @@ public class MatchServiceTests
 
         _notifierMock.Verify(n => n.NotifyGroup(lobbyId, "LobbyMatchStarted", lobbyId), Times.Once);
     }
+
+    // Answer questions
+    [Fact]
+    public async Task AnswerQuestion_LobbyNotFound_NotifiesError()
+    {
+        string connId = "c1", lobbyId = "l1";
+        _storeMock.Setup(s => s.Get(lobbyId)).Returns((Lobby?)null);
+
+        var json = JsonDocument.Parse("null").RootElement;
+        await _service.AnswerQuestion(connId, lobbyId, json);
+
+        _notifierMock.Verify(n => n.NotifyClient(connId, "Error", "Lobby not found"), Times.Once);
+    }
+
+    [Fact]
+    public async Task AnswerQuestion_PlayerNotFound_NotifiesError()
+    {
+        string connId = "c1", lobbyId = "l1";
+        var fakeLobby = new Lobby
+        {
+            LobbyId = lobbyId,
+            Players = new List<Player>(),
+            Match = new LobbyMatch { Questions = new List<Question> { new MultipleChoiceQuestion() } }
+        };
+        _storeMock.Setup(s => s.Get(lobbyId)).Returns(fakeLobby);
+
+        var json = JsonDocument.Parse("null").RootElement;
+        await _service.AnswerQuestion(connId, lobbyId, json);
+
+        _notifierMock.Verify(n => n.NotifyClient(connId, "Error", "You are not in this lobby"), Times.Once);
+    }
+
+    [Fact]
+    public async Task AnswerQuestion_NoActiveQuestion_NotifiesError()
+    {
+        string connId = "c1", lobbyId = "l1";
+        var fakeLobby = new Lobby
+        {
+            LobbyId = lobbyId,
+            Players = new List<Player> { new Player { ConnectionId = connId } },
+            Match = new LobbyMatch { Questions = new List<Question>() }
+        };
+        _storeMock.Setup(s => s.Get(lobbyId)).Returns(fakeLobby);
+
+        var json = JsonDocument.Parse("5").RootElement;
+        await _service.AnswerQuestion(connId, lobbyId, json);
+
+        _notifierMock.Verify(n => n.NotifyClient(connId, "Error", "No active question"), Times.Once);
+    }
+
+    [Fact]
+    public async Task AnswerQuestion_PlayerAlreadyAnswered_NotifiesError()
+    {
+        string connId = "c1", lobbyId = "l1";
+        var fakeLobby = new Lobby
+        {
+            LobbyId = lobbyId,
+            Players = new List<Player> { new Player { ConnectionId = connId, HasAnsweredCurrent = true } },
+            Match = new LobbyMatch { Questions = new List<Question> { new MultipleChoiceQuestion() } }
+        };
+        _storeMock.Setup(s => s.Get(lobbyId)).Returns(fakeLobby);
+
+        var json = JsonDocument.Parse("0").RootElement;
+        await _service.AnswerQuestion(connId, lobbyId, json);
+
+        _notifierMock.Verify(n => n.NotifyClient(connId, "Error", "You already answered this question"), Times.Once);
+    }
+
+    [Fact]
+    public async Task AnswerQuestion_CorrectAnswer_AddsScore_AndNotifiesAccepted()
+    {
+        string connId = "c1", lobbyId = "l1";
+        var fakeQuestion = new TrueFalseQuestion
+        {
+            Points = 100,
+            CorrectAnswer = true
+        };
+        var player = new Player { ConnectionId = connId };
+        var fakeLobby = new Lobby
+        {
+            LobbyId = lobbyId,
+            Players = new List<Player> { player },
+            Match = new LobbyMatch
+            {
+                CurrentQuestionIndex = 0,
+                Questions = new List<Question> { fakeQuestion }
+            }
+        };
+
+        _storeMock.Setup(s => s.Get(lobbyId)).Returns(fakeLobby);
+        _notifierMock.Setup(n => n.NotifyClient(connId, "AnswerAccepted", It.IsAny<ScoreEntry>()))
+            .Returns(Task.CompletedTask);
+
+        var json = JsonDocument.Parse("true").RootElement;
+        await _service.AnswerQuestion(connId, lobbyId, json);
+
+        _notifierMock.Verify(n => n.NotifyClient(connId, "AnswerAccepted", It.IsAny<ScoreEntry>()), Times.Once);
+        Assert.True(player.HasAnsweredCurrent);
+        Assert.Single(player.QuestionScores);
+    }
+
+    [Fact]
+    public async Task AnswerQuestion_IsCorrectThrows_NotifiesError()
+    {
+        string connId = "c1", lobbyId = "l1";
+        var fakeQuestion = new MultipleChoiceQuestion
+        {
+            Points = 100,
+            CorrectAnswerIndex = 0
+        };
+        var player = new Player { ConnectionId = connId };
+        var fakeLobby = new Lobby
+        {
+            LobbyId = lobbyId,
+            Players = new List<Player> { player },
+            Match = new LobbyMatch
+            {
+                CurrentQuestionIndex = 0,
+                Questions = new List<Question> { fakeQuestion }
+            }
+        };
+
+        _storeMock.Setup(s => s.Get(lobbyId)).Returns(fakeLobby);
+        _notifierMock.Setup(n => n.NotifyClient(connId, "Error", It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        var json = JsonDocument.Parse("\"invalid\"").RootElement;
+        await _service.AnswerQuestion(connId, lobbyId, json);
+
+        _notifierMock.Verify(n => n.NotifyClient(connId, "Error", It.IsAny<string>()), Times.Once);
+    }
 }

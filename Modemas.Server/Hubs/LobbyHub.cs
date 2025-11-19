@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using System.Text.Json;
 
 using Modemas.Server.Interfaces;
 using Modemas.Server.Models;
@@ -29,7 +30,7 @@ public class LobbyHub : Hub
     public async Task StartVoting(string lobbyId)
         => await _lobbyService.StartVoting(lobbyId);
 
-    public async Task AnswerQuestion(string lobbyId, object answer)
+    public async Task AnswerQuestion(string lobbyId, JsonElement answer)
         => await _matchService.AnswerQuestion(Context.ConnectionId, lobbyId, answer);
 
     public async Task UpdateLobbySettings(string lobbyId, LobbySettings settings)
