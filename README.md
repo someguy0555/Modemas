@@ -20,7 +20,6 @@ Kaput is a web application made by team Modemas, using ASP.NET (C# NET 8.0) Core
     - Database will store questions.
     - Timer
     - Point system
-    - The ability to vote for topics.
     - Fix any bugs
     - Somewhat normal UI
 * **Final**:
@@ -58,6 +57,7 @@ The project consists of two parts:
     This command starts both the backend and the frontend.
 
 ## Report reading
-```
-dotnet tool run reportgenerator   -reports:"./Modemas.Tests/TestResults/56c454a6-3657-402f-9416-b4b01a887a72/coverage.cobertura.xml"   -targetdir:"./CoverageReport"   -reporttypes:Html
-```
+There should be scripts for that, whether .bat or .sh
+To run tests, simply run those scripts.
+* full-test.sh
+* full-test.bat

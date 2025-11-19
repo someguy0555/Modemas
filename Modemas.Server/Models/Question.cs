@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Modemas.Server.Interfaces;
 namespace Modemas.Server.Models;
 
 public enum QuestionType
@@ -42,6 +43,7 @@ public abstract class Question
 }
 
 public abstract class Question<TAnswer> : Question
+    where TAnswer : notnull
 {
     /// <summary>
     /// Implemented in derived types to parse the JsonElement into TAnswer.
