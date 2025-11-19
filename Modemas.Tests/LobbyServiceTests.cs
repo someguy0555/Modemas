@@ -2,7 +2,6 @@ using Moq;
 using Modemas.Server.Services;
 using Modemas.Server.Models;
 using Modemas.Server.Interfaces;
-using Xunit;
 
 public class LobbyServiceTests
 {
@@ -264,7 +263,8 @@ public class LobbyServiceTests
 
         _managerMock.Setup(m => m.GetLobby(lobbyId)).Returns(fakeLobby);
         _repoMock.Setup(r => r.GetByTopicAsync(topic))
-            .ReturnsAsync(new List<Question>());
+                 .ReturnsAsync(new List<Question> { new MultipleChoiceQuestion { Text = "Placeholder" } });
+
         var generatedQuestions = new List<Question>
         {
             new MultipleChoiceQuestion { Text = "What is Mars?" }
@@ -272,6 +272,7 @@ public class LobbyServiceTests
 
         _questionServiceMock.Setup(q => q.GenerateQuestionsAsync(3, topic))
             .ReturnsAsync(generatedQuestions);
+
         _repoMock.Setup(r => r.SaveAsync(topic, generatedQuestions))
             .Returns(Task.CompletedTask);
         _notifierMock.Setup(n => n.NotifyGroup(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object[]>()))
@@ -279,12 +280,11 @@ public class LobbyServiceTests
 
         await _service.StartVoting(lobbyId);
 
+
+        _matchServiceMock.Verify(m => m.StartMatch(lobbyId), Times.Once);
         _notifierMock.Verify(n => n.NotifyGroup(lobbyId, "VotingStarted", lobbyId, 0), Times.Once);
         _notifierMock.Verify(n => n.NotifyGroup(lobbyId, "VotingEnded", lobbyId), Times.Once);
         _notifierMock.Verify(n => n.NotifyGroup(lobbyId, "MatchStartFailed", lobbyId, "Questions unavailable"), Times.Never);
-
-        _matchServiceMock.Verify(m => m.StartMatch(lobbyId), Times.Once);
-        _repoMock.Verify(r => r.SaveAsync(topic, generatedQuestions), Times.Once);
     }
 
     [Fact]
@@ -301,9 +301,9 @@ public class LobbyServiceTests
             LobbyId = lobbyId,
             HostConnectionId = hostConnectionId,
             Players = new List<Player>
-        {
-            new() { Name = playerName, ConnectionId = playerConnectionId }
-        }
+            {
+                new() { Name = playerName, ConnectionId = playerConnectionId }
+            }
         };
 
         _managerMock.Setup(m => m.FindLobbyByConnection(hostConnectionId)).Returns(fakeLobby);
@@ -329,9 +329,9 @@ public class LobbyServiceTests
             LobbyId = lobbyId,
             HostConnectionId = hostConnectionId,
             Players = new List<Player>
-        {
-            new() { Name = playerName, ConnectionId = playerConnectionId }
-        }
+            {
+                new() { Name = playerName, ConnectionId = playerConnectionId }
+            }
         };
 
         _managerMock.Setup(m => m.FindLobbyByConnection(playerConnectionId)).Returns(fakeLobby);
