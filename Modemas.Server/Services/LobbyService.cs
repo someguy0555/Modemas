@@ -174,8 +174,8 @@ public class LobbyService : ILobbyService
         }
 
         // Generate new questions
-        try
-        {
+        // try
+        // {
             var questions = await _questionGenerationService.GetOrGenerateQuestionsAsync(count, topic);
             Console.WriteLine("Questions were generated or something.", questions);
             if (!questions.Any()) return false;
@@ -191,11 +191,12 @@ public class LobbyService : ILobbyService
                 Console.WriteLine("Questions: " + q.Text);
             }
             return true;
-        }
-        catch
-        {
-            return false;
-        }
+        // }
+        // catch
+        // {
+        //     Console.WriteLine("ExceptionQuestions: " + lobby.Match.Questions);
+        //     return false;
+        // }
     }
 
     /// <summary>
