@@ -10,10 +10,14 @@ namespace Modemas.Server.Controllers;
 public class ServerStatsController : ControllerBase
 {
     private readonly ILobbyStore _lobbyStore;
+    private readonly IStatisticsCalculator<Player, int> _playerStatsCalculator;
 
-    public ServerStatsController(ILobbyStore lobbyStore)
+    public ServerStatsController(
+        ILobbyStore lobbyStore,
+        IStatisticsCalculator<Player, int> playerStatsCalculator)
     {
         _lobbyStore = lobbyStore;
+        _playerStatsCalculator = playerStatsCalculator;
     }
 
     [HttpGet]
@@ -36,13 +40,20 @@ public class ServerStatsController : ControllerBase
         var totalLobbies = lobbies.Count;
         var activeLobbies = lobbies.Count(l => l.State == LobbyState.Started);
         var waitingLobbies = totalLobbies - activeLobbies;
-        var totalPlayers = lobbies.Sum(l => l.Players.Count);
+
+        var allPlayers = lobbies.SelectMany(l => l.Players).ToList();
+        var totalPlayers = allPlayers.Count;
         var averagePlayers = lobbies.Average(l => l.Players.Count);
+
         var activeTopics = lobbies
             .Where(l => !string.IsNullOrWhiteSpace(l.LobbySettings?.Topic))
             .Select(l => l.LobbySettings!.Topic!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(t => t);
+
+        var totalScore = _playerStatsCalculator.CalculateTotal(allPlayers    , p => p.TotalPoints);
+        var averageScore = _playerStatsCalculator.CalculateAverage(allPlayers, p => p.TotalPoints);
+        var topPlayer = _playerStatsCalculator.FindTopPerformer(allPlayers   , p => p.TotalPoints);
 
         var stats = new ServerStats(
             TotalLobbies: totalLobbies,

@@ -7,12 +7,28 @@ using Modemas.Server.Interfaces;
 public class ServerStatsControllerTests
 {
     private readonly Mock<ILobbyStore> _lobbyStoreMock;
+    private readonly Mock<IStatisticsCalculator<Player, int>> _statsCalculatorMock;
     private readonly ServerStatsController _controller;
 
     public ServerStatsControllerTests()
     {
         _lobbyStoreMock = new Mock<ILobbyStore>();
-        _controller = new ServerStatsController(_lobbyStoreMock.Object);
+        _statsCalculatorMock = new Mock<IStatisticsCalculator<Player, int>>();
+
+        _statsCalculatorMock
+            .Setup(c => c.CalculateTotal(It.IsAny<List<Player>>(), It.IsAny<Func<Player, int>>()))
+            .Returns((List<Player> players, Func<Player, int> selector) => players.Sum(selector));
+
+        _statsCalculatorMock
+            .Setup(c => c.CalculateAverage(It.IsAny<List<Player>>(), It.IsAny<Func<Player, int>>()))
+            .Returns((List<Player> players, Func<Player, int> selector) =>
+                players.Any() ? (int)players.Average(selector) : 0);
+
+        _statsCalculatorMock
+            .Setup(c => c.FindTopPerformer(It.IsAny<List<Player>>(), It.IsAny<Func<Player, int>>()))
+            .Returns((List<Player> players, Func<Player, int> selector) => players.OrderByDescending(selector).FirstOrDefault());
+
+        _controller = new ServerStatsController(_lobbyStoreMock.Object, _statsCalculatorMock.Object);
     }
 
     [Fact]
@@ -117,4 +133,5 @@ public class ServerStatsControllerTests
         Assert.Single(stats.ActiveTopics);
         Assert.Contains("ValidTopic", stats.ActiveTopics);
     }
+
 }
