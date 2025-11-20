@@ -49,11 +49,10 @@ public class QuestionGenerationService : IQuestionGenerationService
 
         Console.WriteLine($"pre-response: {payload}");
         var response = await _http.PostAsJsonAsync("http://localhost:11435/api/generate", payload);
-        response.EnsureSuccessStatusCode();
-
         string content = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"Response content: {content}");
+        // response.EnsureSuccessStatusCode();
 
+        Console.WriteLine($"Response content: {content}");
         var questions = _parser.Parse(content);
         Console.WriteLine($"Parsed {questions} questions successfully.");
 
