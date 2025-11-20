@@ -40,5 +40,3 @@ public class LobbyStore : ILobbyStore
     public IEnumerator<Lobby> GetEnumerator() => _lobbies.Values.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
-
-
