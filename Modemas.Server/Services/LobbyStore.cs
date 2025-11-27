@@ -34,8 +34,9 @@ public class LobbyStore : ILobbyStore
             l.HostConnectionId == connectionId ||
             l.Players.Any(p => p.ConnectionId == connectionId));
 
+    public IEnumerable<Lobby> GetAll()
+        => _lobbies.Values;
+
     public IEnumerator<Lobby> GetEnumerator() => _lobbies.Values.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
-
-

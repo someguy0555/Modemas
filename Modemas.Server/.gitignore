@@ -430,3 +430,4 @@ FodyWeavers.xsd
 # JetBrains Rider / IntelliJ IDEA
 .idea/
 .DS_STORE
+modemas.db

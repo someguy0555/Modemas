@@ -85,7 +85,7 @@ public class MatchService : IMatchService
         await _notifier.NotifyGroup(lobby.LobbyId, "MatchEndEnded");
     }
 
-    public async Task AnswerQuestion(string connectionId, string lobbyId, object answer)
+    public async Task AnswerQuestion(string connectionId, string lobbyId, JsonElement answer)
     {
         var lobby = _store.Get(lobbyId);
         if (lobby == null) 
@@ -116,31 +116,9 @@ public class MatchService : IMatchService
 
         try
         {
-            if (answer is JsonElement json)
-            {
-                switch (question.Type)
-                {
-                    case QuestionType.MultipleChoice:
-                        if (json.ValueKind == JsonValueKind.Number && json.TryGetInt32(out var intVal))
-                            answer = intVal;
-                        break;
+            var parsedAnswer = question.ParseAnswer(answer);
 
-                    case QuestionType.MultipleAnswer:
-                        if (json.ValueKind == JsonValueKind.Array)
-                            answer = json.EnumerateArray()
-                                         .Where(e => e.ValueKind == JsonValueKind.Number)
-                                         .Select(e => e.GetInt32())
-                                         .ToList();
-                        break;
-
-                    case QuestionType.TrueFalse:
-                        if (json.ValueKind == JsonValueKind.True || json.ValueKind == JsonValueKind.False)
-                            answer = json.GetBoolean();
-                        break;
-                }
-            }
-
-            int points = question.IsCorrect(answer);
+            int points = question.IsCorrect(parsedAnswer);
             bool isCorrect = points > 0;
 
             var entry = new ScoreEntry(lobby.Match.CurrentQuestionIndex, points, isCorrect);
@@ -153,6 +131,10 @@ public class MatchService : IMatchService
         catch (ArgumentException ex)
         {
             await _notifier.NotifyClient(connectionId, "Error", ex.Message);
+        }
+        catch (InvalidAnswerFormatException eex)
+        {
+            await _notifier.NotifyClient(connectionId, "Error", "An unexpected error occurred while processing your answer.");
         }
         catch (Exception)
         {

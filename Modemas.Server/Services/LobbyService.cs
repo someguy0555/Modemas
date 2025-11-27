@@ -40,8 +40,29 @@ public class LobbyService : ILobbyService
         // await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
         await _notifier.NotifyLobbyCreated(connectionId, lobby.LobbyId);
 
-        await JoinLobby(connectionId, lobby.LobbyId, hostName);
+        await HostJoinLobby(connectionId, lobby.LobbyId, hostName);
         Console.WriteLine($"Lobby {lobby.LobbyId} created by {hostName}");
+    }
+
+    private async Task HostJoinLobby(string connectionId, string lobbyId, string playerName)
+    {
+        var lobby = _manager.GetLobby(lobbyId);
+        if (lobby == null)
+        {
+            await _notifier.NotifyError(connectionId, "Lobby not found");
+            return;
+        }
+
+        bool added = _manager.AddPlayer(lobby, connectionId, playerName);
+        if (!added)
+        {
+            await _notifier.NotifyError(connectionId, "Name already taken or duplicate connection");
+            return;
+        }
+
+        await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
+        await _notifier.NotifyPlayerJoined(lobby.LobbyId, playerName);
+        Console.WriteLine($"Player {playerName} joined lobby {lobbyId}");
     }
 
     /// <summary>
@@ -64,20 +85,15 @@ public class LobbyService : ILobbyService
         }
 
         await _notifier.AddPlayerToGroup(connectionId, lobby.LobbyId);
-        
-        var playerNames = lobby.Players.Select(p => p.Name).ToList();
-        await _notifier.NotifyClient(connectionId, "LobbyJoined", lobby.LobbyId, playerName, playerNames, lobby.State.ToString());
-        
-        var settingsPayload = new
-        {
-            numberOfQuestions = lobby.LobbySettings.NumberOfQuestions,
-            questionTimerInSeconds = lobby.LobbySettings.QuestionTimerInSeconds,
-            topic = lobby.LobbySettings.Topic
-        };
-        await _notifier.NotifyClient(connectionId, "LobbySettingsUpdated", settingsPayload);
-        
         await _notifier.NotifyPlayerJoined(lobby.LobbyId, playerName);
-
+        await _notifier.NotifyClient(
+            connectionId,
+            "LobbyJoined",
+            lobby.LobbyId,
+            playerName,
+            lobby.Players.Select(p => p.Name),
+            lobby.State
+        );
         Console.WriteLine($"Player {playerName} joined lobby {lobbyId}");
     }
 
@@ -98,29 +114,9 @@ public class LobbyService : ILobbyService
             await _notifier.NotifyError(connectionId, "Only the host can update settings");
             return;
         }
-        
-        var safeNumber = Math.Max(1, settings.NumberOfQuestions);
-        var safeTimer = Math.Max(1, settings.QuestionTimerInSeconds);
-        var safeTopic = (settings.Topic ?? "").Trim();
 
-        var sanitized = new LobbySettings(safeNumber, safeTimer, safeTopic);
-        
-        _manager.UpdateSettings(lobby, sanitized);
-        
-        lobby.LobbySettings = sanitized;
-        
-        try
-        {
-            await EnsureMatchQuestionsAsync(lobby);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error while adjusting match questions for lobby {lobbyId}: {ex}");
-            await _notifier.NotifyError(connectionId, "Failed to apply settings to current questions.");
-        }
-        
-
-        await _notifier.NotifyLobbySettingsUpdated(lobbyId, sanitized);
+        _manager.UpdateSettings(lobby, settings);
+        await _notifier.NotifyLobbySettingsUpdated(lobbyId, settings);
         Console.WriteLine($"Settings updated for lobby {lobbyId}");
     }
 
@@ -173,29 +169,34 @@ public class LobbyService : ILobbyService
         if (existing.Any())
         {
             lobby.Match ??= new LobbyMatch();
-            lobby.Match.Questions = existing.ToList();
-            
-            await EnsureMatchQuestionsAsync(lobby);
+            lobby.Match.Questions = existing;
             return true;
         }
 
         // Generate new questions
-        try
-        {
-            var questions = await _questionGenerationService.GenerateQuestionsAsync(count, topic);
+        // try
+        // {
+            var questions = await _questionGenerationService.GetOrGenerateQuestionsAsync(count, topic);
+            Console.WriteLine("Questions were generated or something.", questions);
             if (!questions.Any()) return false;
-            
+
             await _repo.SaveAsync(topic, questions);
+            Console.WriteLine("Saved questions");
+
             lobby.Match ??= new LobbyMatch();
             lobby.Match.Questions = questions.ToList();
-            
-            await EnsureMatchQuestionsAsync(lobby);
+            Console.WriteLine("Saved questions end: " + lobby.Match.Questions.ToString());
+            foreach (var q in lobby.Match.Questions)
+            {
+                Console.WriteLine("Questions: " + q.Text);
+            }
             return true;
-        }
-        catch
-        {
-            return false;
-        }
+        // }
+        // catch
+        // {
+        //     Console.WriteLine("ExceptionQuestions: " + lobby.Match.Questions);
+        //     return false;
+        // }
     }
 
     /// <summary>
@@ -250,59 +251,5 @@ public class LobbyService : ILobbyService
             await _notifier.NotifyGroup(lobby.LobbyId, "LobbyRemovePlayer", disconnectedPlayer.Name);
             Console.WriteLine($"Player {disconnectedPlayer.Name} disconnected from lobby {lobby.LobbyId}");
         }
-    }
-    
-    private async Task EnsureMatchQuestionsAsync(Lobby lobby)
-    {
-        if (lobby == null || lobby.LobbySettings == null || string.IsNullOrWhiteSpace(lobby.LobbySettings.Topic))
-            return;
-
-        lobby.Match ??= new LobbyMatch();
-
-        var topic = lobby.LobbySettings.Topic.Trim();
-        var desiredCount = Math.Max(1, lobby.LobbySettings.NumberOfQuestions);
-        var desiredTime = Math.Max(1, lobby.LobbySettings.QuestionTimerInSeconds);
-
-        var current = lobby.Match.Questions ?? new List<Question>();
-        
-        if (current.Count > desiredCount)
-        {
-            lobby.Match.Questions = current.Take(desiredCount).ToList();
-            current = lobby.Match.Questions;
-        }
-        
-        if (current.Count < desiredCount)
-        {
-            var missing = desiredCount - current.Count;
-            var generated = new List<Question>();
-            try
-            {
-                generated = (await _questionGenerationService.GenerateQuestionsAsync(missing, topic)).ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to generate additional questions for topic '{topic}': {ex}");
-            }
-
-            if (generated.Any())
-            {
-                current.AddRange(generated);
-                try
-                {
-                    await _repo.SaveAsync(topic, current);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Failed to save questions for topic '{topic}': {ex}");
-                }
-            }
-        }
-        
-        foreach (var q in current)
-        {
-            q.TimeLimit = desiredTime;
-        }
-        
-        lobby.Match.Questions = current;
     }
 }

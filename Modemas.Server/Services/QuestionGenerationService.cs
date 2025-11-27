@@ -12,6 +12,8 @@ public class QuestionGenerationService : IQuestionGenerationService
     public QuestionGenerationService(HttpClient http, IQuestionParser parser, IQuestionRepository repo)
     {
         _http = http;
+        _http.Timeout = TimeSpan.FromMinutes(10);
+        Console.WriteLine($"http timeout: {http.Timeout}");
         _parser = parser;
         _repo = repo;
     }
@@ -22,6 +24,7 @@ public class QuestionGenerationService : IQuestionGenerationService
     /// </summary>
     public async Task<IEnumerable<Question>> GetOrGenerateQuestionsAsync(int count = 5, string topic = "general knowledge")
     {
+        Console.WriteLine("GetOrGenerate: " + topic);
         var existing = await _repo.GetByTopicAsync(topic);
         if (existing != null && existing.Any())
             return existing;
@@ -36,7 +39,7 @@ public class QuestionGenerationService : IQuestionGenerationService
     /// <summary>
     /// Calls the local DeepSeek API to generate new questions.
     /// </summary>
-    public async Task<List<Question>> GenerateQuestionsAsync(int count = 5, string topic = "general knowledge")
+    public async Task<IEnumerable<Question>> GenerateQuestionsAsync(int count = 5, string topic = "general knowledge")
     {
         var payload = new
         {
@@ -44,13 +47,16 @@ public class QuestionGenerationService : IQuestionGenerationService
             prompt = $"Generate {count} Kahoot-style questions about {topic}. Output valid JSON only."
         };
 
+        Console.WriteLine($"pre-response: {payload}");
         var response = await _http.PostAsJsonAsync("http://localhost:11435/api/generate", payload);
-
-        response.EnsureSuccessStatusCode();
         string content = await response.Content.ReadAsStringAsync();
+        // response.EnsureSuccessStatusCode();
 
+        Console.WriteLine($"Response content: {content}");
         var questions = _parser.Parse(content);
+        Console.WriteLine($"Parsed {questions} questions successfully.");
 
-        return questions.ToList();
+        Console.WriteLine($"questions: {questions}");
+        return questions;
     }
 }

@@ -17,19 +17,6 @@ function App() {
     const [isHost, setIsHost] = useState(false);
     const [matchEndDurationInSeconds, setMatchEndDurationInSeconds] = useState(null);
 
-    // const [serverStats, setServerStats] = useState(null);
-    //
-    // const fetchServerStats = async () => {
-    //     try {
-    //         const response = await fetch("/api/serverstats");
-    //         if (!response.ok) throw new Error("Failed to fetch server stats");
-    //         const data = await response.json();
-    //         setServerStats(data);
-    //     } catch (err) {
-    //         console.error("Error fetching server stats:", err);
-    //     }
-    // };
-
     // MatchView
     const [question, setQuestion] = useState(null);
     const [answered, setAnswered] = useState(false);

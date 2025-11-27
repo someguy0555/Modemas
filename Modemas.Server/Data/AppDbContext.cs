@@ -23,7 +23,6 @@ public class AppDbContext : DbContext
             .WithOne()
             .OnDelete(DeleteBehavior.Cascade);
 
-        // optional indexes, constraints, etc.
         modelBuilder.Entity<QuestionTopicGroup>()
             .HasIndex(q => q.Topic)
             .IsUnique();
