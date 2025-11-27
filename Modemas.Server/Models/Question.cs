@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using Modemas.Server.Interfaces;
 namespace Modemas.Server.Models;
 
 public enum QuestionType
