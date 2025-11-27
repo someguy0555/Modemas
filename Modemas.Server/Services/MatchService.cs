@@ -132,6 +132,10 @@ public class MatchService : IMatchService
         {
             await _notifier.NotifyClient(connectionId, "Error", ex.Message);
         }
+        catch (InvalidAnswerFormatException eex)
+        {
+            await _notifier.NotifyClient(connectionId, "Error", "An unexpected error occurred while processing your answer.");
+        }
         catch (Exception)
         {
             await _notifier.NotifyClient(connectionId, "Error", "An unexpected error occurred while processing your answer.");
