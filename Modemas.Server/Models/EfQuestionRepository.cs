@@ -51,6 +51,7 @@ public class EfQuestionRepository : IQuestionRepository
     public async Task DeleteAsync(string topic)
     {
         var group = await _context.QuestionTopicGroups
+
             .FirstOrDefaultAsync(g => g.Topic.ToLower() == topic.ToLower());
         if (group == null) return;
 
