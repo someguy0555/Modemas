@@ -7,7 +7,12 @@ import MatchView from "./views/MatchView.jsx";
 import MatchEndView from "./views/MatchEndView.jsx";
 import "./App.css";
 
+import GlobalErrorToast from "./components/GlobalErrorToast";
+
 function App() {
+    // Error state
+    const [globalError, setGlobalError] = useState(null);
+
     // Program elements
     const [connection, setConnection] = useState(null);
     const [lobbyId, setLobbyId] = useState(null);
@@ -76,7 +81,7 @@ function App() {
         });
         newConnection.on("KickedFromLobby", async (message) => {
             await newConnection.stop();
-            console.log("You were kicked out of the room: " + message);
+            setGlobalError(message);
             setLobbyId(null);
             setPlayerName(null);
             setPlayers([]);
@@ -114,12 +119,14 @@ function App() {
         newConnection.on("MatchStartFailed", (localLobbyId, errorMessage) => {
             // TODO: MatchStartFailed should throw a message like "failed to generate questions" or somethiing.
             console.log(`MatchEndEnded: localLobbyId = ${localLobbyId}`);
+            setGlobalError(errorMessage || "Failed to start match");
             setLobbyState("Waiting");
             console.log(`Returning to lobby ${lobbyId}.`);
             setPlayerResults(null);
         });
         newConnection.on("Error", (errorMsg) => {
-            console.log(errorMsg);
+            console.error("Server error:", errorMsg);
+            setGlobalError(errorMsg);
         });
 
         try {
@@ -141,6 +148,7 @@ function App() {
         case "Idle":
             view = (
                 <MainMenuView
+                    setGlobalError={setGlobalError}
                     connection={connection}
                     setGlobalPlayerName={setPlayerName}
                     setGlobalLobbyId={setLobbyId}
@@ -150,6 +158,7 @@ function App() {
         case "Waiting":
             view = (
                 <WaitingView
+                    setGlobalError={setGlobalError}
                     connection={connection}
                     lobbyId={lobbyId}
                     lobbyState={lobbyState}
@@ -162,6 +171,7 @@ function App() {
         case "Voting":
             view = (
                 <TopicChooserView
+                    setGlobalError={setGlobalError}
                     connection={connection}
                 />
             );
@@ -169,6 +179,7 @@ function App() {
         case "Started":
             view = (
                 <MatchView
+                    setGlobalError={setGlobalError}
                     connection={connection}
                     lobbyId={lobbyId}
                     question={question}
@@ -182,6 +193,7 @@ function App() {
         case "Closed":
             view = (
                 <MatchEndView
+                    setGlobalError={setGlobalError}
                     connection={connection}
                     durationInSeconds={matchEndDurationInSeconds}
                     playerResults={playerResults}
@@ -200,6 +212,12 @@ function App() {
     return (
         <div className="App">
             {view}
+
+            <GlobalErrorToast
+                message={globalError}
+                duration={4000}
+                onClose={() => setGlobalError(null)}
+            />
         </div>
     );
 }

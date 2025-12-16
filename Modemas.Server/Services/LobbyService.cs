@@ -166,9 +166,9 @@ public class LobbyService : ILobbyService
 
         // Check repository
         var existing = (await _repo.GetByTopicAsync(topic)).ToList();
-        foreach (var q in existing) {
-            Console.WriteLine("TimeLimit: " + q.TimeLimit);
-        }
+        // foreach (var q in existing) {
+        //     Console.WriteLine("TimeLimit: " + q.TimeLimit);
+        // }
         if (existing.Any())
         {
             lobby.Match ??= new LobbyMatch();
@@ -179,10 +179,11 @@ public class LobbyService : ILobbyService
         // Generate new questions
         try
         {
+            throw new Exception("Failed to generate questions.");
             var questions = await _questionGenerationService.GetOrGenerateQuestionsAsync(count, topic);
-            foreach (var q in questions) {
-                Console.WriteLine("TimeLimit: " + q.TimeLimit);
-            }
+            // foreach (var q in questions) {
+            //     Console.WriteLine("TimeLimit: " + q.TimeLimit);
+            // }
             Console.WriteLine("Questions were generated or something.", questions);
             if (!questions.Any()) return false;
 
@@ -192,10 +193,9 @@ public class LobbyService : ILobbyService
             lobby.Match ??= new LobbyMatch();
             lobby.Match.Questions = questions.ToList();
             Console.WriteLine("Saved questions end: " + lobby.Match.Questions.ToString());
-            foreach (var q in lobby.Match.Questions)
-            {
-                Console.WriteLine("Questions: " + q.Text);
-            }
+            // foreach (var q in lobby.Match.Questions) {
+            //     Console.WriteLine("Questions: " + q.Text);
+            // }
             return true;
         }
         catch

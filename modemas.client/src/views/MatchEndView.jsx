@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 /**
  * View for displaying the end of the match.
  */
-export default function MatchEndView({ connection, durationInSeconds, playerResults }) {
+export default function MatchEndView({ setGlobalError, connection, durationInSeconds, playerResults }) {
     // ***********************************************
     // Local state
     // ***********************************************

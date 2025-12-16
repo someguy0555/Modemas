@@ -5,7 +5,7 @@ import logo from "../assets/logo.svg";
 /**
  * View for waiting in a lobby before the match starts.
  */
-export default function WaitingView({ connection, lobbyId, lobbyState, playerName, players, isHost }) {
+export default function WaitingView({ setGlobalError, connection, lobbyId, lobbyState, playerName, players, isHost }) {
     // ***********************************************
     // Local state
     // ***********************************************
