@@ -57,6 +57,7 @@ public class MatchService : IMatchService
             foreach (var player in lobby.Players)
                 player.HasAnsweredCurrent = false;
 
+            question.TimeLimit = lobby.LobbySettings.QuestionTimerInSeconds;
             int duration = question.TimeLimit;
 
             await _notifier.NotifyGroup(lobby.LobbyId, "NewQuestion", question);

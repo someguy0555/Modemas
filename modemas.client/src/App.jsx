@@ -111,6 +111,13 @@ function App() {
             console.log(`Returning to lobby ${lobbyId}.`);
             setPlayerResults(null);
         });
+        newConnection.on("MatchStartFailed", (localLobbyId, errorMessage) => {
+            // TODO: MatchStartFailed should throw a message like "failed to generate questions" or somethiing.
+            console.log(`MatchEndEnded: localLobbyId = ${localLobbyId}`);
+            setLobbyState("Waiting");
+            console.log(`Returning to lobby ${lobbyId}.`);
+            setPlayerResults(null);
+        });
         newConnection.on("Error", (errorMsg) => {
             console.log(errorMsg);
         });
