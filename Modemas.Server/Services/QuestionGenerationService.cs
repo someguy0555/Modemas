@@ -55,6 +55,12 @@ public class QuestionGenerationService : IQuestionGenerationService
         Console.WriteLine($"Response content: {content}");
         var questions = _parser.Parse(content);
         Console.WriteLine($"Parsed {questions} questions successfully.");
+        
+        // Set the timer to a specific value.
+        foreach (var q in questions) {
+            q.TimeLimit = 20;
+            Console.WriteLine("AAA: " + q.TimeLimit);
+        }
 
         Console.WriteLine($"questions: {questions}");
         return questions;

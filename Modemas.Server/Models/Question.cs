@@ -20,7 +20,7 @@ public abstract class Question
     public string Text { get; set; } = string.Empty;
 
     [JsonPropertyName("timeLimit")]
-    public int TimeLimit { get; set; } = 10;
+    public int TimeLimit { get; set; } = 20;
 
     [JsonPropertyName("points")]
     public int Points

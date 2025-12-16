@@ -166,6 +166,9 @@ public class LobbyService : ILobbyService
 
         // Check repository
         var existing = (await _repo.GetByTopicAsync(topic)).ToList();
+        foreach (var q in existing) {
+            Console.WriteLine("TimeLimit: " + q.TimeLimit);
+        }
         if (existing.Any())
         {
             lobby.Match ??= new LobbyMatch();
@@ -174,9 +177,12 @@ public class LobbyService : ILobbyService
         }
 
         // Generate new questions
-        // try
-        // {
+        try
+        {
             var questions = await _questionGenerationService.GetOrGenerateQuestionsAsync(count, topic);
+            foreach (var q in questions) {
+                Console.WriteLine("TimeLimit: " + q.TimeLimit);
+            }
             Console.WriteLine("Questions were generated or something.", questions);
             if (!questions.Any()) return false;
 
@@ -191,12 +197,12 @@ public class LobbyService : ILobbyService
                 Console.WriteLine("Questions: " + q.Text);
             }
             return true;
-        // }
-        // catch
-        // {
-        //     Console.WriteLine("ExceptionQuestions: " + lobby.Match.Questions);
-        //     return false;
-        // }
+        }
+        catch
+        {
+            Console.WriteLine("ExceptionQuestions: " + lobby.Match.Questions);
+            return false;
+        }
     }
 
     /// <summary>
@@ -215,7 +221,8 @@ public class LobbyService : ILobbyService
 
         if (!ok)
         {
-            await _notifier.NotifyGroup(lobbyId, "MatchStartFailed", lobbyId, "Questions unavailable");
+            await _notifier.NotifyGroup(lobbyId, "MatchStartFailed", lobbyId, "Unable to generate questions.");
+            // await _notifier.NotifyGroup(lobbyId, "MatchEndEnded", lobbyId);
             return;
         }
 
