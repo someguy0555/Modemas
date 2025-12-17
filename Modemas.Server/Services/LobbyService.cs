@@ -135,6 +135,7 @@ public class LobbyService : ILobbyService
         if (lobby.HostConnectionId != connectionId)
         {
             await _notifier.NotifyError(connectionId, "Only the host can kick players");
+            Console.WriteLine("Is host = " + lobby.HostConnectionId == connectionId);
             return;
         }
 
@@ -179,7 +180,7 @@ public class LobbyService : ILobbyService
         // Generate new questions
         try
         {
-            throw new Exception("Failed to generate questions.");
+            // throw new Exception("Failed to generate questions.");
             var questions = await _questionGenerationService.GetOrGenerateQuestionsAsync(count, topic);
             // foreach (var q in questions) {
             //     Console.WriteLine("TimeLimit: " + q.TimeLimit);
