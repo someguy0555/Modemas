@@ -1,4 +1,7 @@
 using System.Net;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Moq;
 using Moq.Protected;
 using Modemas.Server.Models;
@@ -10,11 +13,18 @@ public class QuestionGenerationServiceTests
     private readonly Mock<IQuestionParser> _parserMock;
     private readonly Mock<IQuestionRepository> _repoMock;
     private readonly HttpClient _http;
+    private readonly Mock<IHostEnvironment> _hostEnvMock;
+    private readonly Mock<ILogger<QuestionGenerationService>> _loggerMock;
+    private readonly IConfiguration _config;
 
     public QuestionGenerationServiceTests()
     {
         _parserMock = new Mock<IQuestionParser>();
         _repoMock = new Mock<IQuestionRepository>();
+        _hostEnvMock = new Mock<IHostEnvironment>();
+        _loggerMock = new Mock<ILogger<QuestionGenerationService>>();
+
+        _hostEnvMock.Setup(e => e.EnvironmentName).Returns(Environments.Development);
 
         var handler = new Mock<HttpMessageHandler>();
 
@@ -31,10 +41,15 @@ public class QuestionGenerationServiceTests
             });
 
         _http = new HttpClient(handler.Object);
+
+        _config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["QuestionGeneration:Endpoint"] = "http://localhost:11435/api/generate"
+        }).Build();
     }
 
     private QuestionGenerationService CreateService() =>
-        new QuestionGenerationService(_http, _parserMock.Object, _repoMock.Object);
+        new QuestionGenerationService(_http, _parserMock.Object, _repoMock.Object, _loggerMock.Object, _config, _hostEnvMock.Object);
 
     [Fact]
     public async Task GetOrGenerateQuestionsAsync_ReturnsExistingQuestions_IfCached()
@@ -133,7 +148,7 @@ public class QuestionGenerationServiceTests
             });
 
         var httpClient = new HttpClient(handler.Object);
-        var service = new QuestionGenerationService(httpClient, _parserMock.Object, _repoMock.Object);
+        var service = new QuestionGenerationService(httpClient, _parserMock.Object, _repoMock.Object, _loggerMock.Object, _config, _hostEnvMock.Object);
 
         _parserMock.Setup(p => p.Parse(It.IsAny<string>()))
             .Returns(new List<Question> { new MultipleAnswerQuestion { Text = "OK" } });
