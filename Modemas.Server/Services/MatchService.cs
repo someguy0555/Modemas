@@ -127,7 +127,7 @@ public class MatchService : IMatchService
             player.HasAnsweredCurrent = true;
 
             await _notifier.NotifyClient(connectionId, "AnswerAccepted", entry);
-
+            Console.WriteLine("Entry " + entry.Points);
         }
         catch (ArgumentException ex)
         {

@@ -26,8 +26,14 @@ public class QuestionGenerationService : IQuestionGenerationService
     {
         Console.WriteLine("GetOrGenerate: " + topic);
         var existing = await _repo.GetByTopicAsync(topic);
-        if (existing != null && existing.Any())
+        if (existing != null && existing.Any()) {
+            // foreach (var q in existing) {
+            //     q.Points = 100;
+            //     Console.WriteLine("Points: " + q.TimeLimit);
+            // }
+            await _repo.SaveAsync(topic, existing);
             return existing;
+        }
 
         var newQuestions = await GenerateQuestionsAsync(count, topic);
 
@@ -56,11 +62,11 @@ public class QuestionGenerationService : IQuestionGenerationService
         var questions = _parser.Parse(content);
         Console.WriteLine($"Parsed {questions} questions successfully.");
         
-        // Set the timer to a specific value.
-        foreach (var q in questions) {
-            q.TimeLimit = 20;
-            Console.WriteLine("AAA: " + q.TimeLimit);
-        }
+        // Set points to questions
+        // foreach (var q in questions) {
+        //     q.Points = 100;
+        //     Console.WriteLine("GenPoints: " + q.TimeLimit);
+        // }
 
         Console.WriteLine($"questions: {questions}");
         return questions;
