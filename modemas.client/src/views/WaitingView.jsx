@@ -5,7 +5,7 @@ import logo from "../assets/logo.svg";
 /**
  * View for waiting in a lobby before the match starts.
  */
-export default function WaitingView({ connection, lobbyId, lobbyState, playerName, players, isHost }) {
+export default function WaitingView({ setGlobalError, connection, lobbyId, lobbyState, playerName, players, isHost }) {
     // ***********************************************
     // Local state
     // ***********************************************
@@ -53,7 +53,7 @@ export default function WaitingView({ connection, lobbyId, lobbyState, playerNam
 
         // Build settings record to send
         const newSettings = {
-            numberOfQuestions: Number(numberOfQuestions),
+            numberOfQuestions: !generateNew ? 10 : Number(numberOfQuestions),
             questionTimerInSeconds: Number(questionTimer),
             topic: selectedTopic
         };
@@ -182,14 +182,18 @@ export default function WaitingView({ connection, lobbyId, lobbyState, playerNam
                             </div>
 
                             {/* --- Question + timer settings --- */}
-                            <label className="label">Number of Questions:</label>
-                            <input
-                                className="settings-input"
-                                type="number"
-                                min={1}
-                                value={numberOfQuestions}
-                                onChange={(e) => setNumberOfQuestions(Number(e.target.value))}
-                            />
+                            {generateNew && (
+                                <>
+                                    <label className="label">Number of Questions:</label>
+                                    <input
+                                        className="settings-input"
+                                        type="number"
+                                        min={1}
+                                        value={numberOfQuestions}
+                                        onChange={(e) => setNumberOfQuestions(Number(e.target.value))}
+                                    />
+                                </>
+                            )}
                             <label className="label">Timer per Question (seconds):</label>
                             <input
                                 className="settings-input"

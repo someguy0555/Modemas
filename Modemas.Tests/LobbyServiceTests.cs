@@ -377,4 +377,190 @@ public class LobbyServiceTests
         _managerMock.Verify(m => m.RemovePlayer(It.IsAny<Lobby>(), It.IsAny<string>()), Times.Never);
         _notifierMock.Verify(n => n.NotifyGroup(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
+
+    [Fact]
+    public async Task CreateLobby_LobbyNull_NotifiesError()
+    {
+        var connectionId = "conn1";
+        var hostName = "Host";
+
+        _managerMock.Setup(m => m.CreateLobby(connectionId))
+            .Returns(new Lobby { LobbyId = "lobby1", HostConnectionId = connectionId });
+
+        _notifierMock.Setup(n => n.NotifyError(connectionId, "Lobby not found"))
+            .Returns(Task.CompletedTask);
+
+        await _service.CreateLobby(connectionId, hostName);
+
+        _notifierMock.Verify(n => n.NotifyError(connectionId, "Lobby not found"), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateLobby_AddPlayerFails_NotifiesError()
+    {
+        var connectionId = "conn1";
+        var hostName = "Host";
+        var fakeLobby = new Lobby { LobbyId = "lobby1", HostConnectionId = connectionId };
+
+        _managerMock.Setup(m => m.CreateLobby(connectionId)).Returns(fakeLobby);
+        _managerMock.Setup(m => m.GetLobby(fakeLobby.LobbyId)).Returns(fakeLobby);
+        _managerMock.Setup(m => m.AddPlayer(fakeLobby, connectionId, hostName)).Returns(false);
+
+        _notifierMock.Setup(n => n.NotifyError(connectionId, "Name already taken or duplicate connection"))
+            .Returns(Task.CompletedTask);
+
+        await _service.CreateLobby(connectionId, hostName);
+
+        _notifierMock.Verify(n => n.NotifyError(connectionId, "Name already taken or duplicate connection"), Times.Once);
+    }
+
+    [Fact]
+    public async Task CreateLobby_Success_AddsPlayerAndNotifies()
+    {
+        var connectionId = "conn1";
+        var hostName = "Host";
+        var fakeLobby = new Lobby { LobbyId = "lobby1", HostConnectionId = connectionId };
+
+        _managerMock.Setup(m => m.CreateLobby(connectionId)).Returns(fakeLobby);
+        _managerMock.Setup(m => m.GetLobby(fakeLobby.LobbyId)).Returns(fakeLobby);
+        _managerMock.Setup(m => m.AddPlayer(fakeLobby, connectionId, hostName)).Returns(true);
+
+        _notifierMock.Setup(n => n.NotifyLobbyCreated(connectionId, fakeLobby.LobbyId)).Returns(Task.CompletedTask);
+        _notifierMock.Setup(n => n.AddPlayerToGroup(connectionId, fakeLobby.LobbyId)).Returns(Task.CompletedTask);
+        _notifierMock.Setup(n => n.NotifyPlayerJoined(fakeLobby.LobbyId, hostName)).Returns(Task.CompletedTask);
+
+        await _service.CreateLobby(connectionId, hostName);
+
+        _managerMock.Verify(m => m.AddPlayer(fakeLobby, connectionId, hostName), Times.Once);
+        _notifierMock.Verify(n => n.AddPlayerToGroup(connectionId, fakeLobby.LobbyId), Times.Once);
+        _notifierMock.Verify(n => n.NotifyPlayerJoined(fakeLobby.LobbyId, hostName), Times.Once);
+    }
+
+    [Fact]
+    public async Task JoinLobby_LobbyNull_NotifiesError()
+    {
+        var connectionId = "conn1";
+        var lobbyId = "lobby1";
+        var playerName = "Player";
+
+        _managerMock.Setup(m => m.GetLobby(lobbyId)).Returns((Lobby)null);
+        _notifierMock.Setup(n => n.NotifyError(connectionId, "Lobby not found")).Returns(Task.CompletedTask);
+
+        await _service.JoinLobby(connectionId, lobbyId, playerName);
+
+        _notifierMock.Verify(n => n.NotifyError(connectionId, "Lobby not found"), Times.Once);
+    }
+
+    [Fact]
+    public async Task JoinLobby_AddPlayerFails_NotifiesError()
+    {
+        var connectionId = "conn1";
+        var lobbyId = "lobby1";
+        var playerName = "Player";
+        var fakeLobby = new Lobby { LobbyId = lobbyId, HostConnectionId = "host1" };
+
+        _managerMock.Setup(m => m.GetLobby(lobbyId)).Returns(fakeLobby);
+        _managerMock.Setup(m => m.AddPlayer(fakeLobby, connectionId, playerName)).Returns(false);
+        _notifierMock.Setup(n => n.NotifyError(connectionId, "Name already taken or duplicate connection")).Returns(Task.CompletedTask);
+
+        await _service.JoinLobby(connectionId, lobbyId, playerName);
+
+        _notifierMock.Verify(n => n.NotifyError(connectionId, "Name already taken or duplicate connection"), Times.Once);
+    }
+
+    [Fact]
+    public async Task JoinLobby_Success_AddsPlayerAndNotifies()
+    {
+        var connectionId = "conn1";
+        var lobbyId = "lobby1";
+        var playerName = "Player";
+        var fakeLobby = new Lobby
+        {
+            LobbyId = lobbyId,
+            HostConnectionId = "host1",
+            Players = new List<Player>()
+        };
+
+        _managerMock.Setup(m => m.GetLobby(lobbyId)).Returns(fakeLobby);
+        _managerMock.Setup(m => m.AddPlayer(fakeLobby, connectionId, playerName)).Returns(true);
+
+        _notifierMock.Setup(n => n.AddPlayerToGroup(connectionId, lobbyId)).Returns(Task.CompletedTask);
+        _notifierMock.Setup(n => n.NotifyPlayerJoined(lobbyId, playerName)).Returns(Task.CompletedTask);
+        _notifierMock.Setup(n => n.NotifyClient(connectionId, "LobbyJoined", lobbyId, playerName, It.IsAny<IEnumerable<string>>(), fakeLobby.State)).Returns(Task.CompletedTask);
+
+        await _service.JoinLobby(connectionId, lobbyId, playerName);
+
+        _managerMock.Verify(m => m.AddPlayer(fakeLobby, connectionId, playerName), Times.Once);
+        _notifierMock.Verify(n => n.AddPlayerToGroup(connectionId, lobbyId), Times.Once);
+        _notifierMock.Verify(n => n.NotifyPlayerJoined(lobbyId, playerName), Times.Once);
+        _notifierMock.Verify(n => n.NotifyClient(connectionId, "LobbyJoined", lobbyId, playerName, It.IsAny<IEnumerable<string>>(), fakeLobby.State), Times.Once);
+    }
+
+    [Fact]
+    public async Task WaitForQuestions_LobbyNull_ReturnsFalse()
+    {
+        _managerMock.Setup(m => m.GetLobby("lobby1")).Returns((Lobby)null);
+
+        var result = await _service.WaitForQuestionsAsync("lobby1");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task WaitForQuestions_TopicEmpty_ReturnsFalse()
+    {
+        var fakeLobby = new Lobby { LobbyId = "lobby1", LobbySettings = new LobbySettings { Topic = "" } };
+        _managerMock.Setup(m => m.GetLobby("lobby1")).Returns(fakeLobby);
+
+        var result = await _service.WaitForQuestionsAsync("lobby1");
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task WaitForQuestions_ExistingQuestions_ReturnsTrue()
+    {
+        var questions = new List<Question> { new MultipleChoiceQuestion { Text = "Q1" } };
+        var fakeLobby = new Lobby { LobbyId = "lobby1", LobbySettings = new LobbySettings { Topic = "Math" } };
+
+        _managerMock.Setup(m => m.GetLobby("lobby1")).Returns(fakeLobby);
+        _repoMock.Setup(r => r.GetByTopicAsync("Math")).ReturnsAsync(questions);
+
+        var result = await _service.WaitForQuestionsAsync("lobby1");
+
+        Assert.True(result);
+        Assert.Equal(questions, fakeLobby.Match.Questions);
+    }
+
+    [Fact]
+    public async Task WaitForQuestions_NoRepoQuestions_GenerationEmpty_ReturnsFalse()
+    {
+        var fakeLobby = new Lobby { LobbyId = "lobby1", LobbySettings = new LobbySettings { Topic = "Science", NumberOfQuestions = 3 } };
+
+        _managerMock.Setup(m => m.GetLobby("lobby1")).Returns(fakeLobby);
+        _repoMock.Setup(r => r.GetByTopicAsync("Science")).ReturnsAsync(new List<Question>());
+        _questionServiceMock.Setup(q => q.GetOrGenerateQuestionsAsync(3, "Science")).ReturnsAsync(new List<Question>());
+
+        var result = await _service.WaitForQuestionsAsync("lobby1");
+
+        Assert.False(result);
+        Assert.Empty(fakeLobby.Match.Questions);
+    }
+
+    [Fact]
+    public async Task WaitForQuestions_NoRepoQuestions_GenerationReturnsQuestions_ReturnsTrue()
+    {
+        var genQuestions = new List<Question> { new MultipleChoiceQuestion { Text = "Generated Q" } };
+        var fakeLobby = new Lobby { LobbyId = "lobby1", LobbySettings = new LobbySettings { Topic = "History", NumberOfQuestions = 1 } };
+
+        _managerMock.Setup(m => m.GetLobby("lobby1")).Returns(fakeLobby);
+        _repoMock.Setup(r => r.GetByTopicAsync("History")).ReturnsAsync(new List<Question>());
+        _questionServiceMock.Setup(q => q.GetOrGenerateQuestionsAsync(1, "History")).ReturnsAsync(genQuestions);
+        _repoMock.Setup(r => r.SaveAsync("History", genQuestions)).Returns(Task.CompletedTask);
+
+        var result = await _service.WaitForQuestionsAsync("lobby1");
+
+        Assert.True(result);
+        Assert.Equal(genQuestions, fakeLobby.Match.Questions);
+    }
 }

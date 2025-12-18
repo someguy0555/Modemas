@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "./css/MatchView.css";
 
-export default function MatchView({ connection, lobbyId, question, answered, setAnswered, isCorrect, setIsCorrect }) {
+export default function MatchView({ setGlobalError, connection, lobbyId, question, answered, setAnswered, isCorrect, setIsCorrect }) {
     const [selectedIndices, setSelectedIndices] = useState([]);
     const [timeLeft, setTimeLeft] = useState(null);
 

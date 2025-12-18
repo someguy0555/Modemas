@@ -5,7 +5,7 @@ import logo from "../assets/logo.svg";
 /**
  * View for creating a new lobby or joining an existing one.
  */
-export default function MainMenuView({ connection, setGlobalPlayerName, setGlobalLobbyId }) {
+export default function MainMenuView({ setGlobalError, connection, setGlobalPlayerName, setGlobalLobbyId }) {
     // ***********************************************
     // Local state
     // ***********************************************

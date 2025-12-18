@@ -72,12 +72,12 @@ app.MapFallbackToFile("/index.html");
 
 app.MapHub<LobbyHub>("/lobbyhub");
 
-// Idk, used it to migrate and stuff.
-// using (var scope = app.Services.CreateScope())
-// {
-//     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-//     db.Database.EnsureDeleted();
-//     db.Database.EnsureCreated();
-// }
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 app.Run();
+
+public partial class Program { }
