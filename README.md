@@ -63,4 +63,4 @@ To run tests, simply run those scripts.
 * full-test.bat
 
 ## Video
-[Link to the final version video](https://youtu.be/4C2WSj65iL4?si=8ZjtPuj1J5BgS72M)
+[Link to the final version video](https://youtu.be/wLlrSVJMAZ0?si=pn3rJJz47ePS5coQ)
