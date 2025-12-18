@@ -51,6 +51,29 @@ public class QuestionGenerationServiceTests
     private QuestionGenerationService CreateService() =>
         new QuestionGenerationService(_http, _parserMock.Object, _repoMock.Object, _loggerMock.Object, _config, _hostEnvMock.Object);
 
+
+    private QuestionGenerationService CreateService(
+        HttpClient? http = null,
+        bool isDevelopment = true)
+    {
+        _hostEnvMock.Reset();
+
+        _hostEnvMock
+            .Setup(e => e.EnvironmentName)
+            .Returns(isDevelopment
+                ? Environments.Development
+                : Environments.Production);
+
+        return new QuestionGenerationService(
+            http ?? _http,
+            _parserMock.Object,
+            _repoMock.Object,
+            _loggerMock.Object,
+            _config,
+            _hostEnvMock.Object
+        );
+    }
+
     [Fact]
     public async Task GetOrGenerateQuestionsAsync_ReturnsExistingQuestions_IfCached()
     {
@@ -160,5 +183,140 @@ public class QuestionGenerationServiceTests
         Assert.Contains("\"model\":\"deepseek\"", sentBody);
         Assert.Contains("Generate 7 Kahoot-style questions about physics", sentBody);
         Assert.Contains("Output valid JSON only.", sentBody);
+    }
+
+    [Fact]
+    public async Task GenerateQuestionsAsync_HttpException_UsesFallback_InDevelopment()
+    {
+        var handler = new Mock<HttpMessageHandler>();
+
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException("Connection failed"));
+
+        var httpClient = new HttpClient(handler.Object);
+        var service = CreateService(httpClient, isDevelopment: true);
+
+        var result = await service.GenerateQuestionsAsync(3, "biology");
+
+        Assert.Equal(3, result.Count());
+        Assert.All(result, q =>
+            Assert.Contains("biology", q.Text));
+    }
+
+    [Fact]
+    public async Task GenerateQuestionsAsync_HttpException_Throws_InProduction()
+    {
+        var handler = new Mock<HttpMessageHandler>();
+
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new HttpRequestException());
+
+        var httpClient = new HttpClient(handler.Object);
+        var service = CreateService(httpClient, isDevelopment: false);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.GenerateQuestionsAsync(2, "chemistry"));
+    }
+
+    [Fact]
+    public async Task GenerateQuestionsAsync_NonSuccessStatus_UsesFallback()
+    {
+        var handler = new Mock<HttpMessageHandler>();
+
+        handler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.InternalServerError,
+                Content = new StringContent("LLM crashed")
+            });
+
+        var service = CreateService(new HttpClient(handler.Object));
+
+        var result = await service.GenerateQuestionsAsync(2, "geography");
+
+        Assert.Equal(2, result.Count());
+    }
+
+    [Fact]
+    public async Task GenerateQuestionsAsync_ParserThrows_UsesFallback()
+    {
+        _parserMock
+            .Setup(p => p.Parse(It.IsAny<string>()))
+            .Throws(new Exception("Invalid JSON"));
+
+        var service = CreateService();
+
+        var result = await service.GenerateQuestionsAsync(1, "art");
+
+        Assert.Single(result);
+        Assert.Contains("art", result.First().Text);
+    }
+
+    [Fact]
+    public async Task GenerateQuestionsAsync_EmptyParsedResult_UsesFallback()
+    {
+        _parserMock
+            .Setup(p => p.Parse(It.IsAny<string>()))
+            .Returns(new List<Question>());
+
+        var service = CreateService();
+
+        var result = await service.GenerateQuestionsAsync(4, "music");
+
+        Assert.Equal(4, result.Count());
+    }
+
+    [Fact]
+    public async Task PlaceholderQuestions_AreDeterministicAndValid()
+    {
+        _parserMock
+            .Setup(p => p.Parse(It.IsAny<string>()))
+            .Returns(new List<Question>());
+
+        var service = CreateService();
+
+        var result = await service.GenerateQuestionsAsync(2, "logic");
+
+        var mc = Assert.IsType<MultipleChoiceQuestion>(result.First());
+
+        Assert.Equal(4, mc.Choices.Count);
+        Assert.Equal(0, mc.CorrectAnswerIndex);
+        Assert.Equal(15, mc.TimeLimit);
+        Assert.Equal(100, mc.Points);
+    }
+
+    [Fact]
+    public async Task GetOrGenerateQuestionsAsync_SavesGeneratedQuestions()
+    {
+        _repoMock.Setup(r => r.GetByTopicAsync("cs"))
+            .ReturnsAsync(new List<Question>());
+
+        var generated = new List<Question>
+    {
+        new MultipleChoiceQuestion { Text = "Generated Q" }
+    };
+
+        _parserMock.Setup(p => p.Parse(It.IsAny<string>()))
+            .Returns(generated);
+
+        var service = CreateService();
+
+        await service.GetOrGenerateQuestionsAsync(1, "cs");
+
+        _repoMock.Verify(r =>
+            r.SaveAsync("cs", generated),
+            Times.Once);
     }
 }
