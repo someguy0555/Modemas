@@ -57,7 +57,6 @@ export default function MatchEndView({ setGlobalError, connection, durationInSec
                         <>
                             <span style={{ marginBottom: '8px' }}>2</span>
                             <span>{sortedResults[1].name}</span>
-                            <span>{sortedResults[1].points} pts</span>
                         </>
                     )}
                 </div>
@@ -82,7 +81,6 @@ export default function MatchEndView({ setGlobalError, connection, durationInSec
                         <>
                             <span style={{ marginBottom: '8px' }}>1</span>
                             <span>{sortedResults[0].name}</span>
-                            <span>{sortedResults[0].points} pts</span>
                         </>
                     )}
                 </div>
@@ -107,7 +105,6 @@ export default function MatchEndView({ setGlobalError, connection, durationInSec
                         <>
                             <span style={{ marginBottom: '8px' }}>3</span>
                             <span>{sortedResults[2].name}</span>
-                            <span>{sortedResults[2].points} pts</span>
                         </>
                     )}
                 </div>
@@ -117,7 +114,7 @@ export default function MatchEndView({ setGlobalError, connection, durationInSec
             <ul>
                 {sortedResults.slice(3).map((p, index) => (
                     <li key={index + 3}>
-                        {index + 4}. {p.name} — {p.points} pts
+                        {index + 4}. {p.name}
                     </li>
                 ))}
             </ul>
