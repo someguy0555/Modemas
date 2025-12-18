@@ -27,11 +27,12 @@ builder.Services.AddSignalR().AddJsonProtocol(options =>
     options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
+// Register typed HttpClient and map it to the interface
 builder.Services.AddHttpClient<QuestionGenerationService>(client =>
 {
     client.Timeout = TimeSpan.FromMinutes(10);
 });
-// builder.Services.AddHttpClient<QuestionGenerationService>();
+builder.Services.AddScoped<IQuestionGenerationService>(sp => sp.GetRequiredService<QuestionGenerationService>());
 
 builder.Services.AddSingleton<ILobbyStore, LobbyStore>();
 builder.Services.AddScoped<ILobbyManager, LobbyManager>();
@@ -39,7 +40,6 @@ builder.Services.AddSingleton<IQuestionParser, QuestionParser>();
 
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<ILobbyService, LobbyService>();
-builder.Services.AddScoped<IQuestionGenerationService, QuestionGenerationService>();
 builder.Services.AddScoped<IQuestionRepository, EfQuestionRepository>();
 builder.Services.AddSingleton(typeof(IStatisticsCalculator<,>), typeof(StatisticsCalculator<,>));
 builder.Services.AddScoped<ILobbyNotifier, LobbyNotifier>(sp =>
@@ -48,8 +48,9 @@ builder.Services.AddScoped<ILobbyNotifier, LobbyNotifier>(sp =>
     return new LobbyNotifier(hubContext.Clients, hubContext.Groups);
 });
 
+var connectionString = builder.Configuration.GetConnectionString("Default") ?? "Data Source=modemas.db";
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=modemas.db"));
+    options.UseSqlite(connectionString));
 var app = builder.Build();
 
 app.UseDefaultFiles();

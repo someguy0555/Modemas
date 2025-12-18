@@ -61,3 +61,6 @@ There should be scripts for that, whether .bat or .sh
 To run tests, simply run those scripts.
 * full-test.sh
 * full-test.bat
+
+## Video
+[Link to the final version video](https://youtu.be/wLlrSVJMAZ0?si=pn3rJJz47ePS5coQ)
